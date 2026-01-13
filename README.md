@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-npm install @yeying-community/yeying-web3
+npm install @yeying-community/web3
 ```
 
 ## 钱包交互 API
@@ -161,3 +161,9 @@ npm install @yeying-community/yeying-web3
 提示：如果前端来自其他域名，请设置
 `COOKIE_SAMESITE=none` 且 `COOKIE_SECURE=true` 并使用 HTTPS，
 以便 `refresh_token` Cookie 能随 `credentials: 'include'` 发送。
+
+## 常见问题
+
+### 刷新token失败
+
+清理旧 Cookie 后重新登录：在浏览器 DevTools → Application → Cookies → http://localhost:4001 删除 refresh_token，再点 Login 后再点 Refresh Token。

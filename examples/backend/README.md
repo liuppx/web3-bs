@@ -9,7 +9,7 @@
 
 默认会静态服务前端页面与 SDK 构建产物：
 - `http://localhost:4001/dapp.html`
-- `http://localhost:4001/dist/yeying-web3.umd.js`
+- `http://localhost:4001/dist/web3.umd.js`
 
 ## Node 版本
 

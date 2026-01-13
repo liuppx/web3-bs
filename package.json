@@ -1,11 +1,11 @@
 {
   "name": "@yeying-community/web3",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "yeying.community@gmail.com",
   "description": "YeYing injected wallet SDK (EIP-1193)",
-  "main": "dist/yeying-web3.cjs.js",
-  "module": "dist/yeying-web3.esm.js",
-  "browser": "dist/yeying-web3.umd.js",
+  "main": "dist/web3.cjs.js",
+  "module": "dist/web3.esm.js",
+  "browser": "dist/web3.umd.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist/**/*"
@@ -19,12 +19,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yeying-community/yeying-web3.git"
+    "url": "git+https://github.com/yeying-community/web3.git"
   },
   "keywords": [],
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/yeying-community/yeying-web3/issues"
+    "url": "https://github.com/yeying-community/web3/issues"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -39,7 +39,7 @@
       "<rootDir>/tests/**/?(*.)(ut|it).ts?(x)"
     ]
   },
-  "homepage": "https://github.com/yeying-community/yeying-web3#readme",
+  "homepage": "https://github.com/yeying-community/web3#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-json": "^6.1.0",

@@ -5,7 +5,7 @@ import {
   authFetch,
   refreshAccessToken,
   getAccessToken,
-} from '@yeying-community/yeying-web3';
+} from '@yeying-community/web3';
 
 async function connectAndLogin() {
   const provider = await getProvider();
