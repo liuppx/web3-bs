@@ -7,9 +7,9 @@
 - `/api/v1/public/auth/logout`
 - `/api/v1/private/profile`
 
-默认会静态服务前端页面与 SDK 构建产物：
-- `http://localhost:4001/dapp.html`
-- `http://localhost:4001/dist/web3.umd.js`
+`/api/v1/private/profile` 同时支持：
+- JWT access token（原有流程）
+- UCAN token（`Authorization: Bearer <UCAN>`）
 
 ## Node 版本
 
@@ -24,6 +24,12 @@ node examples/backend/node/server.js
 ```bash
 ./scripts/backend.sh start node
 ./scripts/backend.sh start node --setup
+```
+
+多后端同时启动（默认端口）：
+```bash
+./scripts/backend.sh start all
+./scripts/backend.sh start all --setup
 ```
 
 ## Go 版本
@@ -82,19 +88,30 @@ mvn -q exec:java -Dexec.mainClass="com.yeying.demo.AuthServer"
 支持 start/stop/restart/status 和 all。
 提示：脚本可加 `--setup` 先安装依赖并构建 `dist`，再启动服务。
 提示：使用 `start/restart` 启动单一目标时，脚本会先停止其它语言版本，避免端口冲突。
+提示：多后端联调时可加 `--no-stop` 保留其它服务运行。
+提示：后端日志统一输出到 `.tmp/backend-logs`。
 
 ## 通用环境变量
 
 所有语言版本均支持以下环境变量（未设置则使用默认值）：
 
-- `PORT`：服务端口（默认 `4001`）
+- `PORT`：服务端口（默认：Go `3201` / Java `3202` / Node `3203` / Python `3204`）
 - `JWT_SECRET`：JWT 签名密钥（默认 `replace-this-in-production`）
 - `ACCESS_TTL_MS`：Access Token 过期时间（毫秒，默认 `900000`）
 - `REFRESH_TTL_MS`：Refresh Token 过期时间（毫秒，默认 `604800000`）
 - `COOKIE_SAMESITE`：`lax` / `strict` / `none`（默认 `lax`）
 - `COOKIE_SECURE`：`true/false`（默认 `false`，仅 HTTPS 时使用 `true`）
 - `CORS_ORIGINS`：允许跨域的 Origin 列表（逗号分隔）
-  - 默认包含：`http://localhost:4001`、`http://127.0.0.1:4001`、`http://localhost:8000`、`http://127.0.0.1:8000`、`http://localhost:8001`、`http://127.0.0.1:8001`
+  - 默认包含：当前服务端口 + `:8000`/`:8001` + 多后端端口 `3201-3204`
+
+UCAN 相关环境变量（可选）：
+- `UCAN_AUD`：服务 DID（默认 `did:web:localhost:<PORT>`）
+- `UCAN_RESOURCE`：资源（默认 `profile`）
+- `UCAN_ACTION`：动作（默认 `read`）
+
+多后端联调注意：
+- 访问不同端口的后端时，请将前端 Origin 加入 `CORS_ORIGINS`
+- 对应 UCAN 调用需匹配 `UCAN_AUD`（例如 `did:web:localhost:3202`）
 
 部分语言版本还支持：
 - `BASE_DIR`：静态资源根目录（可选）

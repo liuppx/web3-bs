@@ -115,23 +115,23 @@ require_cmd() {
 
 start_node() {
   require_cmd node node || return 1
-  start_service node "node \"$ROOT_DIR/examples/backend/node/server.js\""
+  start_service node "exec node \"$ROOT_DIR/examples/backend/node/server.js\""
 }
 
 start_go() {
   require_cmd go go || return 1
-  start_service go "cd \"$ROOT_DIR/examples/backend/go\" && go run ."
+  start_service go "cd \"$ROOT_DIR/examples/backend/go\" && exec go run ."
 }
 
 start_python() {
   ensure_python_bin || return 1
-  start_service python "cd \"$ROOT_DIR/examples/backend/python\" && \"$PYTHON_BIN\" app.py"
+  start_service python "cd \"$ROOT_DIR/examples/backend/python\" && exec \"$PYTHON_BIN\" app.py"
 }
 
 start_java() {
   require_cmd java java || return 1
   require_cmd java mvn || return 1
-  start_service java "cd \"$ROOT_DIR/examples/backend/java\" && mvn -q exec:java -Dexec.mainClass=\"com.yeying.demo.AuthServer\""
+  start_service java "cd \"$ROOT_DIR/examples/backend/java\" && exec mvn -q exec:java -Dexec.mainClass=\"com.yeying.demo.AuthServer\""
 }
 
 ensure_python_bin() {
@@ -174,7 +174,7 @@ setup_java() {
 
 usage() {
   cat <<USAGE
-Usage: ./scripts/backend.sh <start|stop|restart|status> <node|go|python|java|all> [--setup]
+Usage: ./scripts/backend.sh <start|stop|restart|status> <node|go|python|java|all> [--setup] [--no-stop]
 
 Examples:
   ./scripts/backend.sh start node
@@ -188,6 +188,7 @@ Notes:
   - PIDs are under .tmp/backend-pids
   - Use PORT/JWT_SECRET/ACCESS_TTL_MS/REFRESH_TTL_MS/etc via env vars
   - --setup installs dependencies and builds dist (plus language-specific deps)
+  - --no-stop keeps other services running (useful for multi-backend testing)
 USAGE
 }
 
@@ -202,10 +203,14 @@ main() {
   shift 2
 
   local do_setup=false
+  local no_stop=false
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --setup|--install|--build)
         do_setup=true
+        ;;
+      --no-stop|--keep)
+        no_stop=true
         ;;
       -h|--help)
         usage
@@ -311,7 +316,9 @@ main() {
 
   case "$action" in
     start)
-      stop_other_services
+      if [[ "$no_stop" != "true" ]]; then
+        stop_other_services
+      fi
       for t in "${targets[@]}"; do
         if [[ "$do_setup" == "true" ]]; then
           run_setup "$t"
@@ -325,7 +332,9 @@ main() {
       done
       ;;
     restart)
-      stop_other_services
+      if [[ "$no_stop" != "true" ]]; then
+        stop_other_services
+      fi
       for t in "${targets[@]}"; do
         run_stop "$t"
       done

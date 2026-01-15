@@ -47,7 +47,7 @@
         font-size: 13px;
         color: #475569;
       }
-      input, textarea {
+      input, textarea, select {
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         padding: 10px 12px;
@@ -70,6 +70,10 @@
         background: #fff;
         color: #2563eb;
         border: 1px solid #2563eb;
+      }
+      button.small {
+        padding: 6px 10px;
+        font-size: 12px;
       }
       button:disabled {
         opacity: 0.6;
@@ -109,6 +113,47 @@
         font-size: 12px;
         color: #64748b;
       }
+      .backend-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .backend-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px;
+        background: #f8fafc;
+      }
+      .backend-card h4 {
+        margin: 0 0 6px;
+        font-size: 14px;
+      }
+      .backend-card .meta {
+        font-size: 12px;
+        color: #475569;
+        margin-bottom: 6px;
+      }
+      .backend-card code {
+        font-size: 11px;
+        word-break: break-all;
+      }
+      .section {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        background: #ffffff;
+      }
+      .section h2 {
+        margin: 0 0 8px;
+        font-size: 16px;
+      }
+      .section .hint {
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: #64748b;
+      }
     </style>
   </head>
   <body>
@@ -117,42 +162,114 @@
       <p>模拟 Dapp 连接 YeYing 钱包并完成登录。</p>
 
       <div class="row">
-        <div class="field">
-          <label for="baseUrl">Auth Base URL</label>
-          <input id="baseUrl" value="http://localhost:4001/api/v1/public/auth" />
+        <button id="detectBtn">Detect Provider</button>
+        <button id="connectBtn" class="secondary">Connect Wallet</button>
+      </div>
+
+      <div class="section">
+        <h2>SIWE 登录（单后端）</h2>
+        <div class="hint">用于验证单个后端服务的 SIWE + JWT 登录流程。</div>
+        <div class="row">
+          <div class="field">
+            <label for="baseUrl">Auth Base URL</label>
+            <select id="baseUrl"></select>
+          </div>
+          <div class="field">
+            <label for="protectedUrl">Protected API URL</label>
+            <input id="protectedUrl" value="http://localhost:3203/api/v1/private/profile" />
+          </div>
+          <div class="field">
+            <label for="message">Sign Message</label>
+            <input id="message" value="Hello YeYing" />
+          </div>
         </div>
-        <div class="field">
-          <label for="protectedUrl">Protected API URL</label>
-          <input id="protectedUrl" value="http://localhost:4001/api/v1/private/profile" />
-        </div>
-        <div class="field">
-          <label for="message">Sign Message</label>
-          <input id="message" value="Hello YeYing" />
+        <div class="row">
+          <button id="signBtn" class="outline">Sign Message</button>
+          <button id="loginBtn">Login</button>
+          <button id="profileBtn" class="outline">Call Profile</button>
+          <button id="refreshBtn" class="outline">Refresh Token</button>
+          <button id="logoutBtn" class="secondary">Logout</button>
         </div>
       </div>
 
-      <div class="row">
-        <button id="detectBtn">Detect Provider</button>
-        <button id="connectBtn" class="secondary">Connect Wallet</button>
-        <button id="signBtn" class="outline">Sign Message</button>
-        <button id="loginBtn">Login</button>
+      <div class="section">
+        <h2>UCAN 登录（多后端）</h2>
+        <div class="hint">一次 Root UCAN 授权后，可对多个后端分别生成 Invocation UCAN 并访问。</div>
+        <div class="row">
+          <div class="field">
+            <label for="ucanAud">UCAN Audience</label>
+            <input id="ucanAud" value="did:web:localhost:3203" />
+          </div>
+          <div class="field">
+            <label for="ucanResource">UCAN Resource</label>
+            <input id="ucanResource" value="profile" />
+          </div>
+          <div class="field">
+            <label for="ucanAction">UCAN Action</label>
+            <input id="ucanAction" value="read" />
+          </div>
+        </div>
+        <div class="row">
+          <button id="ucanSessionBtn" class="secondary">Init UCAN Session</button>
+          <button id="ucanRootBtn" class="outline">Create Root UCAN</button>
+          <button id="ucanProfileBtn">Call UCAN Profile</button>
+          <button id="ucanAllBtn" class="outline">Call UCAN All</button>
+        </div>
+
+        <h3>Backends</h3>
+        <div class="backend-grid" id="backendList"></div>
       </div>
-      <div class="row">
-        <button id="profileBtn" class="outline">Call Profile</button>
-        <button id="refreshBtn" class="outline">Refresh Token</button>
-        <button id="logoutBtn" class="secondary">Logout</button>
+
+      <div class="section">
+        <h2>WebDAV 存储（UCAN）</h2>
+        <div class="hint">使用 UCAN token 访问 WebDAV（需服务端开启 UCAN）。</div>
+        <div class="row">
+          <div class="field">
+            <label for="webdavBase">WebDAV Base URL</label>
+            <input id="webdavBase" value="http://localhost:6065" />
+          </div>
+          <div class="field">
+            <label for="webdavPrefix">WebDAV Prefix</label>
+            <input id="webdavPrefix" value="/" />
+          </div>
+          <div class="field">
+            <label for="webdavAud">WebDAV Audience</label>
+            <input id="webdavAud" value="did:web:localhost:6065" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="webdavPath">File Path</label>
+            <input id="webdavPath" value="/web3-bs.txt" />
+          </div>
+          <div class="field">
+            <label for="webdavContent">Content</label>
+            <input id="webdavContent" value="Hello WebDAV" />
+          </div>
+        </div>
+        <div class="row">
+          <button id="webdavTokenBtn" class="outline">Create WebDAV UCAN</button>
+          <button id="webdavListBtn" class="outline">List</button>
+          <button id="webdavUploadBtn">Upload</button>
+          <button id="webdavDownloadBtn" class="outline">Download</button>
+          <button id="webdavDeleteBtn" class="secondary">Delete</button>
+        </div>
       </div>
 
       <div class="status">
         <span>Provider</span><div id="providerStatus" class="badge">Not detected</div>
         <span>Address</span><div id="addressStatus">-</div>
         <span>Chain</span><div id="chainStatus">-</div>
-        <span>Token</span><div id="tokenStatus" class="copyable" title="点击复制">-</div>
+        <span>SIWE Token</span><div id="tokenStatus" class="copyable" title="点击复制">-</div>
+        <span>UCAN Session</span><div id="ucanSessionStatus">-</div>
+        <span>UCAN Token</span><div id="ucanTokenStatus" class="copyable" title="点击复制">-</div>
       </div>
 
       <div class="note" id="note">
-        说明：请先执行 <code>npm run build</code>，确保 <code>dist/web3.umd.js</code> 存在。
-        建议通过 <code>http://localhost:4001/dapp.html</code> 打开（同源 Cookie 刷新）。
+        说明：请先执行 <code>npm run build</code>，确保 <code>dist/web3-bs.umd.js</code> 存在。
+        建议通过后端端口打开（如 <code>http://localhost:8001/examples/frontend/dapp.html</code>），以便同源 Cookie 刷新。
+        SIWE 使用上方单后端配置；UCAN 使用多后端列表或自定义 Audience。
+        UCAN 依赖钱包支持 Session 能力。
         点击 Token 即可复制完整值。
         若提示 No provider found，请确认安装 YeYing 钱包扩展并允许该站点访问。
       </div>
@@ -161,28 +278,11 @@
       <pre id="log"></pre>
     </div>
 
-    <script src="http://localhost:4001/dist/web3.umd.js"></script>
     <script>
+      const noteEl = document.getElementById('note');
       const logEl = document.getElementById('log');
-      const providerStatus = document.getElementById('providerStatus');
-      const addressStatus = document.getElementById('addressStatus');
-      const chainStatus = document.getElementById('chainStatus');
-      const tokenStatus = document.getElementById('tokenStatus');
-      const baseUrlInput = document.getElementById('baseUrl');
-      const protectedUrlInput = document.getElementById('protectedUrl');
-      const messageInput = document.getElementById('message');
 
-      const detectBtn = document.getElementById('detectBtn');
-      const connectBtn = document.getElementById('connectBtn');
-      const signBtn = document.getElementById('signBtn');
-      const loginBtn = document.getElementById('loginBtn');
-      const profileBtn = document.getElementById('profileBtn');
-      const refreshBtn = document.getElementById('refreshBtn');
-      const logoutBtn = document.getElementById('logoutBtn');
-
-      let currentToken = null;
-
-      function log(message, data) {
+      function appendLog(message, data) {
         const line = `[${new Date().toLocaleTimeString()}] ${message}`;
         logEl.textContent += `${line}\n`;
         if (data !== undefined) {
@@ -190,6 +290,146 @@
         }
         logEl.scrollTop = logEl.scrollHeight;
       }
+
+      function resolveSdkCandidates() {
+        const params = new URLSearchParams(window.location.search);
+        const override = params.get('sdk');
+        const candidates = [];
+        if (override) candidates.push(override);
+        if (location && location.origin && location.origin !== 'null') {
+          candidates.push(`${location.origin}/dist/web3-bs.umd.js`);
+        }
+        candidates.push('/dist/web3-bs.umd.js');
+        [3203, 3201, 3202, 3204].forEach(port => {
+          candidates.push(`http://localhost:${port}/dist/web3-bs.umd.js`);
+        });
+        return candidates;
+      }
+
+      function loadSdk() {
+        const candidates = resolveSdkCandidates();
+        return new Promise((resolve, reject) => {
+          let index = 0;
+          const next = () => {
+            if (index >= candidates.length) {
+              reject(new Error('Failed to load SDK'));
+              return;
+            }
+            const url = candidates[index++];
+            if (!url) return next();
+            const script = document.createElement('script');
+            script.src = url;
+            script.async = true;
+            script.onload = () => resolve(url);
+            script.onerror = () => next();
+            document.head.appendChild(script);
+          };
+          next();
+        });
+      }
+
+      function initApp(sdkUrl) {
+        appendLog('SDK loaded', { sdkUrl });
+
+        const providerStatus = document.getElementById('providerStatus');
+        const addressStatus = document.getElementById('addressStatus');
+        const chainStatus = document.getElementById('chainStatus');
+        const tokenStatus = document.getElementById('tokenStatus');
+        const ucanSessionStatus = document.getElementById('ucanSessionStatus');
+        const ucanTokenStatus = document.getElementById('ucanTokenStatus');
+        const backendListEl = document.getElementById('backendList');
+        const baseUrlInput = document.getElementById('baseUrl');
+        const protectedUrlInput = document.getElementById('protectedUrl');
+        const messageInput = document.getElementById('message');
+        const ucanAudInput = document.getElementById('ucanAud');
+        const ucanResourceInput = document.getElementById('ucanResource');
+        const ucanActionInput = document.getElementById('ucanAction');
+        const webdavBaseInput = document.getElementById('webdavBase');
+        const webdavPrefixInput = document.getElementById('webdavPrefix');
+        const webdavAudInput = document.getElementById('webdavAud');
+        const webdavPathInput = document.getElementById('webdavPath');
+        const webdavContentInput = document.getElementById('webdavContent');
+
+        const detectBtn = document.getElementById('detectBtn');
+        const connectBtn = document.getElementById('connectBtn');
+        const signBtn = document.getElementById('signBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const profileBtn = document.getElementById('profileBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const ucanSessionBtn = document.getElementById('ucanSessionBtn');
+        const ucanRootBtn = document.getElementById('ucanRootBtn');
+        const ucanProfileBtn = document.getElementById('ucanProfileBtn');
+        const ucanAllBtn = document.getElementById('ucanAllBtn');
+        const webdavTokenBtn = document.getElementById('webdavTokenBtn');
+        const webdavListBtn = document.getElementById('webdavListBtn');
+        const webdavUploadBtn = document.getElementById('webdavUploadBtn');
+        const webdavDownloadBtn = document.getElementById('webdavDownloadBtn');
+        const webdavDeleteBtn = document.getElementById('webdavDeleteBtn');
+
+        let currentToken = null;
+        let ucanSession = null;
+        let ucanRoot = null;
+        let currentUcanToken = null;
+        let webdavToken = null;
+
+        const backendConfigs = [
+          {
+            id: 'go',
+            name: 'Go Backend',
+            port: 3201,
+            baseUrl: 'http://localhost:3201/api/v1/public/auth',
+            protectedUrl: 'http://localhost:3201/api/v1/private/profile',
+            ucanAud: 'did:web:localhost:3201',
+          },
+          {
+            id: 'java',
+            name: 'Java Backend',
+            port: 3202,
+            baseUrl: 'http://localhost:3202/api/v1/public/auth',
+            protectedUrl: 'http://localhost:3202/api/v1/private/profile',
+            ucanAud: 'did:web:localhost:3202',
+          },
+          {
+            id: 'node',
+            name: 'Node Backend',
+            port: 3203,
+            baseUrl: 'http://localhost:3203/api/v1/public/auth',
+            protectedUrl: 'http://localhost:3203/api/v1/private/profile',
+            ucanAud: 'did:web:localhost:3203',
+          },
+          {
+            id: 'python',
+            name: 'Python Backend',
+            port: 3204,
+            baseUrl: 'http://localhost:3204/api/v1/public/auth',
+            protectedUrl: 'http://localhost:3204/api/v1/private/profile',
+            ucanAud: 'did:web:localhost:3204',
+          },
+        ];
+
+        function renderAuthOptions() {
+          baseUrlInput.textContent = '';
+          backendConfigs.forEach(config => {
+            const option = document.createElement('option');
+            option.value = config.baseUrl;
+            option.textContent = `${config.name} (${config.port})`;
+            baseUrlInput.appendChild(option);
+          });
+        }
+
+        function findBackendByBaseUrl(value) {
+          return backendConfigs.find(config => config.baseUrl === value);
+        }
+
+        function findBackendByOrigin(origin) {
+          if (!origin) return null;
+          return backendConfigs.find(config => config.baseUrl.startsWith(origin));
+        }
+
+        function log(message, data) {
+          appendLog(message, data);
+        }
 
       let provider = null;
 
@@ -212,6 +452,185 @@
         currentToken = window.YeYingWeb3.getAccessToken({ storeToken: false });
         tokenStatus.textContent = shortenToken(currentToken);
         tokenStatus.title = currentToken ? '点击复制' : '-';
+      }
+
+      function updateUcanStatus() {
+        ucanSessionStatus.textContent = ucanSession?.did || '-';
+        ucanTokenStatus.textContent = shortenToken(currentUcanToken);
+        ucanTokenStatus.title = currentUcanToken ? '点击复制' : '-';
+      }
+
+      function resolveCaps() {
+        return [{ resource: ucanResourceInput.value, action: ucanActionInput.value }];
+      }
+
+      function capsEqual(a, b) {
+        return JSON.stringify(a || []) === JSON.stringify(b || []);
+      }
+
+      async function ensureUcanSession() {
+        const { createUcanSession } = window.YeYingWeb3;
+        ucanSession = ucanSession || (await createUcanSession());
+        updateUcanStatus();
+        return ucanSession;
+      }
+
+      async function ensureUcanRoot() {
+        const { getStoredUcanRoot, createRootUcan } = window.YeYingWeb3;
+        await ensureUcanSession();
+        const caps = resolveCaps();
+        const nowMs = Date.now();
+
+        if (ucanRoot && ucanSession && ucanRoot.aud && ucanRoot.aud !== ucanSession.did) {
+          log('Root UCAN session mismatch, re-creating');
+          ucanRoot = null;
+        }
+
+        if (ucanRoot && !capsEqual(ucanRoot.cap, caps)) {
+          ucanRoot = null;
+        }
+        if (ucanRoot && ucanRoot.exp && nowMs > ucanRoot.exp) {
+          ucanRoot = null;
+        }
+
+        if (!ucanRoot) {
+          const stored = await getStoredUcanRoot(ucanSession.id);
+          if (stored && (!stored.aud || stored.aud === ucanSession.did)) {
+            if (capsEqual(stored.cap, caps) && (!stored.exp || nowMs <= stored.exp)) {
+              ucanRoot = stored;
+            }
+          }
+        }
+
+        if (!ucanRoot) {
+          provider = provider || (await window.YeYingWeb3.getProvider({ timeoutMs: 3000 }));
+          if (!provider) {
+            log('No provider');
+            return null;
+          }
+          ucanRoot = await createRootUcan({
+            provider,
+            session: ucanSession,
+            capabilities: caps,
+          });
+          log('Root UCAN created', ucanRoot);
+        }
+
+        updateUcanStatus();
+        return ucanRoot;
+      }
+
+      async function callUcanProtected(target) {
+        const { createInvocationUcan } = window.YeYingWeb3;
+        const caps = resolveCaps();
+        const root = await ensureUcanRoot();
+        if (!root) return;
+        currentUcanToken = await createInvocationUcan({
+          issuer: ucanSession,
+          audience: target.ucanAud,
+          capabilities: caps,
+          proofs: [root],
+        });
+        updateUcanStatus();
+
+        const res = await fetch(target.protectedUrl, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${currentUcanToken}`,
+          },
+        });
+        let payload = null;
+        try {
+          payload = await res.json();
+        } catch {
+          payload = { status: res.status };
+        }
+        log(`UCAN profile (${target.name})`, payload);
+      }
+
+      async function ensureWebdavToken() {
+        const { createInvocationUcan } = window.YeYingWeb3;
+        const caps = resolveCaps();
+        const root = await ensureUcanRoot();
+        if (!root) return null;
+        webdavToken = await createInvocationUcan({
+          issuer: ucanSession,
+          audience: webdavAudInput.value,
+          capabilities: caps,
+          proofs: [root],
+        });
+        currentUcanToken = webdavToken;
+        updateUcanStatus();
+        log('WebDAV UCAN created', { audience: webdavAudInput.value });
+        return webdavToken;
+      }
+
+      async function getWebdavClient() {
+        if (!ensureSDK()) return null;
+        const { createWebDavClient } = window.YeYingWeb3;
+        const token = webdavToken || (await ensureWebdavToken());
+        if (!token) return null;
+        return createWebDavClient({
+          baseUrl: webdavBaseInput.value,
+          prefix: webdavPrefixInput.value,
+          token,
+        });
+      }
+
+      function applyBackend(config, options = {}) {
+        if (!config) return;
+        baseUrlInput.value = config.baseUrl;
+        protectedUrlInput.value = config.protectedUrl;
+        if (options.updateUcan !== false) {
+          ucanAudInput.value = config.ucanAud;
+        }
+        if (!options.silent) {
+          log('Backend selected', config);
+        }
+      }
+
+      function renderBackends() {
+        backendListEl.textContent = '';
+        backendConfigs.forEach(config => {
+          const card = document.createElement('div');
+          card.className = 'backend-card';
+
+          const title = document.createElement('h4');
+          title.textContent = `${config.name} (${config.port})`;
+
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          meta.innerHTML = `
+            <div>Auth: <code>${config.baseUrl}</code></div>
+            <div>Profile: <code>${config.protectedUrl}</code></div>
+            <div>UCAN AUD: <code>${config.ucanAud}</code></div>
+          `;
+
+          const button = document.createElement('button');
+          button.className = 'outline small';
+          button.textContent = 'Use this backend';
+          button.addEventListener('click', () => applyBackend(config));
+
+          card.appendChild(title);
+          card.appendChild(meta);
+          card.appendChild(button);
+          backendListEl.appendChild(card);
+        });
+      }
+
+      function setDefaultsFromLocation() {
+        if (!location || location.protocol === 'file:') return;
+        const origin = location.origin;
+        if (!origin) return;
+        const matched = findBackendByOrigin(origin);
+        if (matched) {
+          applyBackend(matched, { silent: true });
+          return;
+        }
+        const fallback = backendConfigs.find(config => config.id === 'node') || backendConfigs[0];
+        if (fallback) {
+          applyBackend(fallback, { silent: true });
+        }
       }
 
       detectBtn.addEventListener('click', async () => {
@@ -326,6 +745,73 @@
         log('Logout', result);
       });
 
+      ucanSessionBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        await ensureUcanSession();
+        log('UCAN session ready', ucanSession);
+      });
+
+      ucanRootBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        const root = await ensureUcanRoot();
+        if (root) {
+          log('Root UCAN ready', root);
+        }
+      });
+
+      ucanProfileBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        await callUcanProtected({
+          name: 'Custom',
+          protectedUrl: protectedUrlInput.value,
+          ucanAud: ucanAudInput.value,
+        });
+      });
+
+      ucanAllBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        for (const config of backendConfigs) {
+          await callUcanProtected(config);
+        }
+      });
+
+      webdavTokenBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        await ensureWebdavToken();
+      });
+
+      webdavListBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        const client = await getWebdavClient();
+        if (!client) return;
+        const listing = await client.listDirectory('/');
+        log('WebDAV list', listing);
+      });
+
+      webdavUploadBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        const client = await getWebdavClient();
+        if (!client) return;
+        await client.upload(webdavPathInput.value, webdavContentInput.value);
+        log('WebDAV upload ok', { path: webdavPathInput.value });
+      });
+
+      webdavDownloadBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        const client = await getWebdavClient();
+        if (!client) return;
+        const content = await client.downloadText(webdavPathInput.value);
+        log('WebDAV download', { path: webdavPathInput.value, content });
+      });
+
+      webdavDeleteBtn.addEventListener('click', async () => {
+        if (!ensureSDK()) return;
+        const client = await getWebdavClient();
+        if (!client) return;
+        await client.remove(webdavPathInput.value);
+        log('WebDAV delete ok', { path: webdavPathInput.value });
+      });
+
       async function copyToken() {
         if (!currentToken) return;
         try {
@@ -348,11 +834,57 @@
 
       tokenStatus.addEventListener('click', copyToken);
 
+      async function copyUcanToken() {
+        if (!currentUcanToken) return;
+        try {
+          await navigator.clipboard.writeText(currentUcanToken);
+          log('UCAN token copied');
+        } catch (error) {
+          try {
+            const input = document.createElement('textarea');
+            input.value = currentUcanToken;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            input.remove();
+            log('UCAN token copied');
+          } catch (fallbackError) {
+            log('Copy failed', fallbackError);
+          }
+        }
+      }
+
+      ucanTokenStatus.addEventListener('click', copyUcanToken);
+
+      baseUrlInput.addEventListener('change', () => {
+        const selected = findBackendByBaseUrl(baseUrlInput.value);
+        if (selected) {
+          applyBackend(selected, { updateUcan: false });
+        }
+      });
+
+      renderAuthOptions();
+      const defaultBackend = backendConfigs.find(config => config.id === 'node') || backendConfigs[0];
+      if (defaultBackend) {
+        applyBackend(defaultBackend, { silent: true });
+      }
+      renderBackends();
+      setDefaultsFromLocation();
+
       if (location.protocol === 'file:') {
-        const note = document.getElementById('note');
-        note.textContent =
+        noteEl.textContent =
           '当前为 file:// 打开。扩展通常不会注入 provider。请使用本地服务器打开该页面，或在扩展设置中允许访问文件 URL。';
       }
+      }
+
+      loadSdk()
+        .then(initApp)
+        .catch(error => {
+          noteEl.textContent =
+            'SDK 加载失败。请先运行 npm run build 并确保 dist/web3-bs.umd.js 可访问。' +
+            '也可通过 ?sdk=http://localhost:3203/dist/web3-bs.umd.js 指定 SDK 地址。';
+          appendLog('SDK load failed', { error: String(error) });
+        });
     </script>
   </body>
 </html>

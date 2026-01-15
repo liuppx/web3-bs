@@ -83,7 +83,15 @@ async function resolveAddress(
   address?: string
 ): Promise<string> {
   if (address) return address;
-  const accounts = await getAccounts(provider);
+  let accounts = await getAccounts(provider);
+  if (!accounts[0]) {
+    const requested = (await provider.request({
+      method: 'eth_requestAccounts',
+    })) as string[];
+    if (Array.isArray(requested)) {
+      accounts = requested;
+    }
+  }
   if (!accounts[0]) {
     throw new Error('No account available');
   }
