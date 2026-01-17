@@ -625,7 +625,7 @@ app.post('/api/v1/public/auth/logout', (req, res) => {
   return res.json(ok({ logout: true }));
 });
 
-app.get('/api/v1/private/profile', (req, res) => {
+app.get('/api/v1/public/profile', (req, res) => {
   const authHeader = req.headers.authorization || '';
   const [, token] = authHeader.split(' ');
 

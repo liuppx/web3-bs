@@ -228,7 +228,7 @@ public class AuthServer {
       return jsonResponse(res, ok(data));
     });
 
-    get("/api/v1/private/profile", (req, res) -> {
+    get("/api/v1/public/profile", (req, res) -> {
       String auth = req.headers("Authorization");
       if (auth == null || !auth.toLowerCase().startsWith("bearer ")) {
         res.status(401);

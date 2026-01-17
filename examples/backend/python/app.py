@@ -471,7 +471,7 @@ def logout():
     return response
 
 
-@app.route("/api/v1/private/profile", methods=["GET", "OPTIONS"])
+@app.route("/api/v1/public/profile", methods=["GET", "OPTIONS"])
 def profile():
     if request.method == "OPTIONS":
         return ("", 204)

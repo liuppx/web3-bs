@@ -176,7 +176,7 @@
           </div>
           <div class="field">
             <label for="protectedUrl">Protected API URL</label>
-            <input id="protectedUrl" value="http://localhost:3203/api/v1/private/profile" />
+            <input id="protectedUrl" value="http://localhost:3203/api/v1/public/profile" />
           </div>
           <div class="field">
             <label for="message">Sign Message</label>
@@ -247,8 +247,7 @@
             <input id="webdavContent" value="Hello WebDAV" />
           </div>
         </div>
-        <div class="row">
-          <button id="webdavTokenBtn" class="outline">Create WebDAV UCAN</button>
+          <div class="row">
           <button id="webdavListBtn" class="outline">List</button>
           <button id="webdavUploadBtn">Upload</button>
           <button id="webdavDownloadBtn" class="outline">Download</button>
@@ -361,7 +360,6 @@
         const ucanRootBtn = document.getElementById('ucanRootBtn');
         const ucanProfileBtn = document.getElementById('ucanProfileBtn');
         const ucanAllBtn = document.getElementById('ucanAllBtn');
-        const webdavTokenBtn = document.getElementById('webdavTokenBtn');
         const webdavListBtn = document.getElementById('webdavListBtn');
         const webdavUploadBtn = document.getElementById('webdavUploadBtn');
         const webdavDownloadBtn = document.getElementById('webdavDownloadBtn');
@@ -379,7 +377,7 @@
             name: 'Go Backend',
             port: 3201,
             baseUrl: 'http://localhost:3201/api/v1/public/auth',
-            protectedUrl: 'http://localhost:3201/api/v1/private/profile',
+            protectedUrl: 'http://localhost:3201/api/v1/public/profile',
             ucanAud: 'did:web:localhost:3201',
           },
           {
@@ -387,7 +385,7 @@
             name: 'Java Backend',
             port: 3202,
             baseUrl: 'http://localhost:3202/api/v1/public/auth',
-            protectedUrl: 'http://localhost:3202/api/v1/private/profile',
+            protectedUrl: 'http://localhost:3202/api/v1/public/profile',
             ucanAud: 'did:web:localhost:3202',
           },
           {
@@ -395,7 +393,7 @@
             name: 'Node Backend',
             port: 3203,
             baseUrl: 'http://localhost:3203/api/v1/public/auth',
-            protectedUrl: 'http://localhost:3203/api/v1/private/profile',
+            protectedUrl: 'http://localhost:3203/api/v1/public/profile',
             ucanAud: 'did:web:localhost:3203',
           },
           {
@@ -403,7 +401,7 @@
             name: 'Python Backend',
             port: 3204,
             baseUrl: 'http://localhost:3204/api/v1/public/auth',
-            protectedUrl: 'http://localhost:3204/api/v1/private/profile',
+            protectedUrl: 'http://localhost:3204/api/v1/public/profile',
             ucanAud: 'did:web:localhost:3204',
           },
         ];
@@ -773,11 +771,6 @@
         for (const config of backendConfigs) {
           await callUcanProtected(config);
         }
-      });
-
-      webdavTokenBtn.addEventListener('click', async () => {
-        if (!ensureSDK()) return;
-        await ensureWebdavToken();
       });
 
       webdavListBtn.addEventListener('click', async () => {

@@ -844,7 +844,7 @@ func main() {
 		writeJSON(w, http.StatusOK, ok(map[string]interface{}{"logout": true}))
 	})
 
-	mux.HandleFunc("/api/v1/private/profile", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/public/profile", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			writeJSON(w, http.StatusMethodNotAllowed, fail(405, "Method not allowed"))
 			return

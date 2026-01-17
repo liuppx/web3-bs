@@ -5,9 +5,9 @@
 - `/api/v1/public/auth/verify`
 - `/api/v1/public/auth/refresh`
 - `/api/v1/public/auth/logout`
-- `/api/v1/private/profile`
+- `/api/v1/public/profile`
 
-`/api/v1/private/profile` 同时支持：
+`/api/v1/public/profile` 同时支持：
 - JWT access token（原有流程）
 - UCAN token（`Authorization: Bearer <UCAN>`）
 

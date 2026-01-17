@@ -122,7 +122,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogoutResponse'
-  /api/v1/private/profile:
+  /api/v1/public/profile:
     get:
       summary: Get profile
       description: 'Example protected endpoint. Requires Authorization: Bearer <access-token> or <UCAN>.'

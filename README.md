@@ -179,7 +179,7 @@ const ucan = await createInvocationUcan({
   proofs: [root],
 });
 
-const res = await authUcanFetch('http://localhost:3203/api/v1/private/profile', { method: 'GET' }, { ucan });
+const res = await authUcanFetch('http://localhost:3203/api/v1/public/profile', { method: 'GET' }, { ucan });
 console.log(await res.json());
 ```
 

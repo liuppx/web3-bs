@@ -33,7 +33,7 @@ async function connectAndLogin() {
 
   console.log('token', login.token);
 
-  const profileRes = await authFetch('http://localhost:3203/api/v1/private/profile', { method: 'GET' }, {
+  const profileRes = await authFetch('http://localhost:3203/api/v1/public/profile', { method: 'GET' }, {
     baseUrl: 'http://localhost:3203/api/v1/public/auth',
     storeToken: false,
   });
@@ -78,7 +78,7 @@ async function connectAndLogin() {
     proofs: [root],
   });
   const ucanRes = await authUcanFetch(
-    'http://localhost:3203/api/v1/private/profile',
+    'http://localhost:3203/api/v1/public/profile',
     { method: 'GET' },
     { ucan: ucanToken }
   );
