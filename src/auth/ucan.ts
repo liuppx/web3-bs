@@ -404,8 +404,8 @@ export async function createRootUcan(options: CreateRootUcanOptions): Promise<Uc
   const session = options.session || (await createUcanSession({ id: options.sessionId, provider }));
   const address = await resolveAddress(provider, options.address);
   const chainId = options.chainId || (await getChainId(provider)) || '1';
-  const domain = options.domain || (typeof window !== 'undefined' ? window.location.host : 'localhost');
-  const uri = options.uri || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+  const domain = options.domain || (typeof window !== 'undefined' ? window.location.host : '127.0.0.1');
+  const uri = options.uri || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1');
   const nonce = options.nonce || randomNonce(8);
   const exp = normalizeExpiry(undefined, options.expiresInMs ?? DEFAULT_SESSION_TTL);
   const nbf = options.notBeforeMs;

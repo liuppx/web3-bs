@@ -21,12 +21,12 @@ import { getProvider, loginWithChallenge, authFetch } from '@yeying-community/we
 const provider = await getProvider({ timeoutMs: 3000 });
 const login = await loginWithChallenge({
   provider,
-  baseUrl: 'http://localhost:3203/api/v1/public/auth',
+  baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
   storeToken: false,
 });
 
-const res = await authFetch('http://localhost:3203/api/v1/public/profile', { method: 'GET' }, {
-  baseUrl: 'http://localhost:3203/api/v1/public/auth',
+const res = await authFetch('http://127.0.0.1:3203/api/v1/public/profile', { method: 'GET' }, {
+  baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
   storeToken: false,
 });
 console.log(await res.json());
@@ -42,7 +42,7 @@ console.log(await res.json());
     const provider = await getProvider({ timeoutMs: 3000 });
     const result = await loginWithChallenge({
       provider,
-      baseUrl: 'http://localhost:3203/api/v1/public/auth',
+      baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
       storeToken: false,
     });
     console.log(result);
@@ -63,18 +63,18 @@ import { getProvider, loginWithChallenge, authFetch, refreshAccessToken, logout 
 const provider = await getProvider();
 const login = await loginWithChallenge({
   provider,
-  baseUrl: 'http://localhost:3203/api/v1/public/auth',
+  baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
   storeToken: false,
 });
 
-const profile = await authFetch('http://localhost:3203/api/v1/public/profile', { method: 'GET' }, {
-  baseUrl: 'http://localhost:3203/api/v1/public/auth',
+const profile = await authFetch('http://127.0.0.1:3203/api/v1/public/profile', { method: 'GET' }, {
+  baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
   storeToken: false,
 });
 console.log(await profile.json());
 
-await refreshAccessToken({ baseUrl: 'http://localhost:3203/api/v1/public/auth', storeToken: false });
-await logout({ baseUrl: 'http://localhost:3203/api/v1/public/auth', storeToken: false });
+await refreshAccessToken({ baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth', storeToken: false });
+await logout({ baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth', storeToken: false });
 ```
 
 ## SIWE 与 UCAN 完整登录流程
@@ -357,17 +357,17 @@ const root = await createRootUcan({
 
 const ucan = await createInvocationUcan({
   issuer: session,
-  audience: 'did:web:localhost:3203',
+  audience: 'did:web:127.0.0.1:3203',
   capabilities: [{ resource: 'profile', action: 'read' }],
   proofs: [root],
 });
 
-const res = await authUcanFetch('http://localhost:3203/api/v1/public/profile', { method: 'GET' }, { ucan });
+const res = await authUcanFetch('http://127.0.0.1:3203/api/v1/public/profile', { method: 'GET' }, { ucan });
 console.log(await res.json());
 ```
 
 后端默认要求的能力为 `resource=profile`、`action=read`，可通过环境变量覆盖：
-- `UCAN_AUD`：服务 DID（默认 `did:web:localhost:3203`）
+- `UCAN_AUD`：服务 DID（默认 `did:web:127.0.0.1:3203`）
 - `UCAN_RESOURCE`：资源（默认 `profile`）
 - `UCAN_ACTION`：动作（默认 `read`）
 
@@ -387,12 +387,12 @@ import { createWebDavClient, initWebDavStorage, loginWithChallenge } from '@yeyi
 
 const login = await loginWithChallenge({
   provider,
-  baseUrl: 'http://localhost:6065/api/v1/public/auth',
+  baseUrl: 'http://127.0.0.1:6065/api/v1/public/auth',
   storeToken: false,
 });
 
 const client = createWebDavClient({
-  baseUrl: 'http://localhost:6065',
+  baseUrl: 'http://127.0.0.1:6065',
   token: login.token,
   prefix: '/',
 });
@@ -403,8 +403,8 @@ const content = await client.downloadText('/docs/hello.txt');
 
 // UCAN 登录 + 自动创建应用目录（推荐）
 const storage = await initWebDavStorage({
-  baseUrl: 'http://localhost:6065',
-  audience: 'did:web:localhost:6065',
+  baseUrl: 'http://127.0.0.1:6065',
+  audience: 'did:web:127.0.0.1:6065',
   appId: 'my-dapp',
   capabilities: [{ resource: 'profile', action: 'read' }],
 });
@@ -433,12 +433,12 @@ import { initDappSession } from '@yeying-community/web3-bs';
 
 const session = await initDappSession({
   appAuth: {
-    baseUrl: 'http://localhost:3203/api/v1/public/auth',
+    baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
     storeToken: false,
   },
   webdav: {
-    baseUrl: 'http://localhost:6065',
-    audience: 'did:web:localhost:6065',
+    baseUrl: 'http://127.0.0.1:6065',
+    audience: 'did:web:127.0.0.1:6065',
     appId: 'my-dapp',
     capabilities: [{ resource: 'profile', action: 'read' }],
   },
@@ -453,7 +453,7 @@ await webdav?.upload(`${session.webdavAppDir}/hello.txt`, 'Hello WebDAV');
 1. 构建 SDK：`npm run build`
 2. 启动后端：`node examples/backend/node/server.js`
 3. 启动前端：`python3 -m http.server 8001`
-4. 访问：`http://localhost:8001/examples/frontend/dapp.html`
+4. 访问：`http://127.0.0.1:8001/examples/frontend/dapp.html`
 5. 确保安装 YeYing 钱包扩展插件
 6. 点击：`Detect Provider` → `Connect Wallet` → `Login`
 
@@ -477,8 +477,8 @@ await webdav?.upload(`${session.webdavAppDir}/hello.txt`, 'Hello WebDAV');
 - Python `3204`
 
 前端调用不同端口的后端时：
-- 将前端 Origin 加入 `CORS_ORIGINS`（例如 `http://localhost:3203`）
-- UCAN 调用的 `audience` 与后端 `UCAN_AUD` 一致（如 `did:web:localhost:3202`）
+- 将前端 Origin 加入 `CORS_ORIGINS`（例如 `http://127.0.0.1:3203`）
+- UCAN 调用的 `audience` 与后端 `UCAN_AUD` 一致（如 `did:web:127.0.0.1:3202`）
 
 提示：`examples/frontend/dapp.html` 已内置多后端列表，可在一次 UCAN 授权后依次调用多个服务。
 
@@ -486,4 +486,4 @@ await webdav?.upload(`${session.webdavAppDir}/hello.txt`, 'Hello WebDAV');
 
 ### 刷新token失败
 
-清理旧 Cookie 后重新登录：在浏览器 DevTools → Application → Cookies → http://localhost:8001 删除 refresh_token，再点 Login 后再点 Refresh Token。
+清理旧 Cookie 后重新登录：在浏览器 DevTools → Application → Cookies → http://127.0.0.1:8001 删除 refresh_token，再点 Login 后再点 Refresh Token。

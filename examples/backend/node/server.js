@@ -15,25 +15,25 @@ const ACCESS_TTL_MS = Number(process.env.ACCESS_TTL_MS || 15 * 60 * 1000);
 const REFRESH_TTL_MS = Number(process.env.REFRESH_TTL_MS || 7 * 24 * 60 * 60 * 1000);
 const COOKIE_SAMESITE = (process.env.COOKIE_SAMESITE || 'lax').toLowerCase();
 const COOKIE_SECURE = String(process.env.COOKIE_SECURE || '').toLowerCase() === 'true';
-const UCAN_AUD = process.env.UCAN_AUD || `did:web:localhost:${PORT}`;
+const UCAN_AUD = process.env.UCAN_AUD || `did:web:127.0.0.1:${PORT}`;
 const UCAN_RESOURCE = process.env.UCAN_RESOURCE || 'profile';
 const UCAN_ACTION = process.env.UCAN_ACTION || 'read';
 
 const multiPorts = [3201, 3202, 3203, 3204];
 const defaultOrigins = [
-  `http://localhost:${PORT}`,
+  `http://127.0.0.1:${PORT}`,
   `http://127.0.0.1:${PORT}`,
   `http://[::]:${PORT}`,
-  'http://localhost:8000',
+  'http://127.0.0.1:8000',
   'http://127.0.0.1:8000',
   'http://[::]:8000',
-  'http://localhost:8001',
+  'http://127.0.0.1:8001',
   'http://127.0.0.1:8001',
   'http://[::]:8001',
 ];
 multiPorts.forEach(port => {
   defaultOrigins.push(
-    `http://localhost:${port}`,
+    `http://127.0.0.1:${port}`,
     `http://127.0.0.1:${port}`,
     `http://[::]:${port}`
   );
@@ -683,5 +683,5 @@ app.use('/dist', express.static(distRoot));
 app.use('/', express.static(frontendRoot));
 
 app.listen(PORT, () => {
-  logInfo(`Auth server running at http://localhost:${PORT}`);
+  logInfo(`Auth server running at http://127.0.0.1:${PORT}`);
 });

@@ -40,6 +40,24 @@ export interface RequestAccountsOptions {
   provider?: Eip1193Provider;
 }
 
+export type AccountSelection = {
+  account: string | null;
+  accounts: string[];
+};
+
+export interface PreferredAccountOptions extends RequestAccountsOptions {
+  storageKey?: string;
+  autoConnect?: boolean;
+  preferStored?: boolean;
+}
+
+export interface WatchAccountsOptions {
+  storageKey?: string;
+  preferStored?: boolean;
+}
+
+export type AccountsChangedHandler = (payload: AccountSelection) => void;
+
 export interface SignMessageOptions {
   provider?: Eip1193Provider;
   message: string;

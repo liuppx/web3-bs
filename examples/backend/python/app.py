@@ -28,21 +28,21 @@ COOKIE_SAMESITE = {
     "none": "None",
 }.get(COOKIE_SAMESITE_RAW, "Lax")
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "").lower() in ("1", "true", "yes")
-UCAN_AUD = os.getenv("UCAN_AUD", f"did:web:localhost:{PORT}")
+UCAN_AUD = os.getenv("UCAN_AUD", f"did:web:127.0.0.1:{PORT}")
 UCAN_RESOURCE = os.getenv("UCAN_RESOURCE", "profile")
 UCAN_ACTION = os.getenv("UCAN_ACTION", "read")
 REQUIRED_UCAN_CAP = [{"resource": UCAN_RESOURCE, "action": UCAN_ACTION}]
 
 DEFAULT_ORIGINS = [
-    f"http://localhost:{PORT}",
     f"http://127.0.0.1:{PORT}",
-    "http://localhost:8000",
+    f"http://127.0.0.1:{PORT}",
     "http://127.0.0.1:8000",
-    "http://localhost:8001",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:8001",
     "http://127.0.0.1:8001",
 ]
 for extra_port in (3201, 3202, 3203, 3204):
-    DEFAULT_ORIGINS.append(f"http://localhost:{extra_port}")
+    DEFAULT_ORIGINS.append(f"http://127.0.0.1:{extra_port}")
     DEFAULT_ORIGINS.append(f"http://127.0.0.1:{extra_port}")
 ALLOWED_ORIGINS = set(
     origin.strip()

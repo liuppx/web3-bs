@@ -25,12 +25,12 @@ async function connectAndLogin() {
     provider,
     address,
     appAuth: {
-      baseUrl: 'http://localhost:3203/api/v1/public/auth',
+      baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
       storeToken: false,
     },
     webdav: {
-      baseUrl: 'http://localhost:6065',
-      audience: 'did:web:localhost:6065',
+      baseUrl: 'http://127.0.0.1:6065',
+      audience: 'did:web:127.0.0.1:6065',
       appId: 'web3-bs-demo',
       capabilities: [{ resource: 'profile', action: 'read' }],
     },
@@ -42,15 +42,15 @@ async function connectAndLogin() {
 
   console.log('token', session.appLogin.token);
 
-  const profileRes = await authFetch('http://localhost:3203/api/v1/public/profile', { method: 'GET' }, {
-    baseUrl: 'http://localhost:3203/api/v1/public/auth',
+  const profileRes = await authFetch('http://127.0.0.1:3203/api/v1/public/profile', { method: 'GET' }, {
+    baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
     storeToken: false,
   });
 
   console.log('profile', await profileRes.json());
 
   const refreshed = await refreshAccessToken({
-    baseUrl: 'http://localhost:3203/api/v1/public/auth',
+    baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
     storeToken: false,
   });
 
@@ -79,12 +79,12 @@ async function connectAndLogin() {
 
   const ucanToken = await createInvocationUcan({
     issuer: session.ucanSession,
-    audience: 'did:web:localhost:3203',
+    audience: 'did:web:127.0.0.1:3203',
     capabilities: [{ resource: 'profile', action: 'read' }],
     proofs: [session.ucanRoot],
   });
   const ucanRes = await authUcanFetch(
-    'http://localhost:3203/api/v1/public/profile',
+    'http://127.0.0.1:3203/api/v1/public/profile',
     { method: 'GET' },
     { ucan: ucanToken }
   );

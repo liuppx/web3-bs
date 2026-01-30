@@ -49,7 +49,7 @@ public class AuthServer {
   private static final JWTVerifier JWT_VERIFIER = JWT.require(JWT_ALG).build();
 
   private static final int PORT = (int) getEnvLong("PORT", 3202);
-  private static final String UCAN_AUD = getEnv("UCAN_AUD", "did:web:localhost:" + PORT);
+  private static final String UCAN_AUD = getEnv("UCAN_AUD", "did:web:127.0.0.1:" + PORT);
   private static final String UCAN_RESOURCE = getEnv("UCAN_RESOURCE", "profile");
   private static final String UCAN_ACTION = getEnv("UCAN_ACTION", "read");
   private static final UcanCapability REQUIRED_UCAN_CAP = new UcanCapability(UCAN_RESOURCE, UCAN_ACTION);
@@ -286,7 +286,7 @@ public class AuthServer {
       return serveFile(res, distDir.resolve(splat[0]));
     });
 
-    System.out.println("Auth server running at http://localhost:" + PORT);
+    System.out.println("Auth server running at http://127.0.0.1:" + PORT);
   }
 
   private static Path resolveBaseDir() {
@@ -784,19 +784,19 @@ public class AuthServer {
 
   private static Set<String> allowedOrigins(int port) {
     String[] defaults = new String[] {
-        "http://localhost:" + port,
         "http://127.0.0.1:" + port,
-        "http://localhost:8000",
+        "http://127.0.0.1:" + port,
         "http://127.0.0.1:8000",
-        "http://localhost:8001",
+        "http://127.0.0.1:8000",
         "http://127.0.0.1:8001",
-        "http://localhost:3201",
+        "http://127.0.0.1:8001",
         "http://127.0.0.1:3201",
-        "http://localhost:3202",
+        "http://127.0.0.1:3201",
         "http://127.0.0.1:3202",
-        "http://localhost:3203",
+        "http://127.0.0.1:3202",
         "http://127.0.0.1:3203",
-        "http://localhost:3204",
+        "http://127.0.0.1:3203",
+        "http://127.0.0.1:3204",
         "http://127.0.0.1:3204",
     };
     String env = getEnv("CORS_ORIGINS", String.join(",", defaults));

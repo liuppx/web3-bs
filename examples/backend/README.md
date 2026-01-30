@@ -105,13 +105,13 @@ mvn -q exec:java -Dexec.mainClass="com.yeying.demo.AuthServer"
   - 默认包含：当前服务端口 + `:8000`/`:8001` + 多后端端口 `3201-3204`
 
 UCAN 相关环境变量（可选）：
-- `UCAN_AUD`：服务 DID（默认 `did:web:localhost:<PORT>`）
+- `UCAN_AUD`：服务 DID（默认 `did:web:127.0.0.1:<PORT>`）
 - `UCAN_RESOURCE`：资源（默认 `profile`）
 - `UCAN_ACTION`：动作（默认 `read`）
 
 多后端联调注意：
 - 访问不同端口的后端时，请将前端 Origin 加入 `CORS_ORIGINS`
-- 对应 UCAN 调用需匹配 `UCAN_AUD`（例如 `did:web:localhost:3202`）
+- 对应 UCAN 调用需匹配 `UCAN_AUD`（例如 `did:web:127.0.0.1:3202`）
 
 部分语言版本还支持：
 - `BASE_DIR`：静态资源根目录（可选）
@@ -119,7 +119,7 @@ UCAN 相关环境变量（可选）：
 
 ## 跨域访问提示
 
-如果前端不是同域（例如 `http://localhost:8001`）：
+如果前端不是同域（例如 `http://127.0.0.1:8001`）：
 1. 设置 `CORS_ORIGINS` 包含该 Origin
 2. 使用 `credentials: 'include'`
 3. 如果是跨站 Cookie，请设置：

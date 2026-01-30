@@ -173,16 +173,16 @@ func parseIntEnv(key string, fallback int64) int64 {
 
 func allowedOriginSet(port int) map[string]struct{} {
 	defaults := []string{
-		fmt.Sprintf("http://localhost:%d", port),
 		fmt.Sprintf("http://127.0.0.1:%d", port),
-		"http://localhost:8000",
+		fmt.Sprintf("http://127.0.0.1:%d", port),
 		"http://127.0.0.1:8000",
-		"http://localhost:8001",
+		"http://127.0.0.1:8000",
+		"http://127.0.0.1:8001",
 		"http://127.0.0.1:8001",
 	}
 	multiPorts := []int{3201, 3202, 3203, 3204}
 	for _, p := range multiPorts {
-		defaults = append(defaults, fmt.Sprintf("http://localhost:%d", p), fmt.Sprintf("http://127.0.0.1:%d", p))
+		defaults = append(defaults, fmt.Sprintf("http://127.0.0.1:%d", p), fmt.Sprintf("http://127.0.0.1:%d", p))
 	}
 	value := getenv("CORS_ORIGINS", strings.Join(defaults, ","))
 	set := make(map[string]struct{})
@@ -639,7 +639,7 @@ func main() {
 	refreshTTL := parseIntEnv("REFRESH_TTL_MS", 7*24*60*60*1000)
 	cookieSameSite := strings.ToLower(getenv("COOKIE_SAMESITE", "lax"))
 	cookieSecure := parseBoolEnv("COOKIE_SECURE")
-	ucanAud := getenv("UCAN_AUD", fmt.Sprintf("did:web:localhost:%d", port))
+	ucanAud := getenv("UCAN_AUD", fmt.Sprintf("did:web:127.0.0.1:%d", port))
 	ucanResource := getenv("UCAN_RESOURCE", "profile")
 	ucanAction := getenv("UCAN_ACTION", "read")
 	requiredUcanCap := []ucanCapability{{Resource: ucanResource, Action: ucanAction}}
@@ -931,7 +931,7 @@ func main() {
 	})
 
 	addr := fmt.Sprintf(":%d", port)
-	log.Printf("Auth server running at http://localhost:%d", port)
+	log.Printf("Auth server running at http://127.0.0.1:%d", port)
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatal(err)
 	}

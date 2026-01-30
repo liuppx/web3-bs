@@ -10,7 +10,7 @@ info:
     - code = 0 indicates success; non-zero indicates failure and data should be null.
     - /refresh relies on the httpOnly refresh_token cookie; clients should send credentials.
 servers:
-  - url: http://localhost:3203
+  - url: http://127.0.0.1:3203
 paths:
   /api/v1/public/auth/challenge:
     post:

@@ -146,21 +146,34 @@
       }
       .status {
         display: grid;
-        grid-template-columns: 140px 1fr;
+        grid-template-columns: 1fr;
         gap: 8px;
         font-size: 14px;
         margin-bottom: 16px;
       }
-      .status span {
+      .status-row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 8px;
+        align-items: center;
+      }
+      .status-row span {
         color: #64748b;
+      }
+      .status-row.hidden {
+        display: none;
+      }
+      .status-slot {
+        margin-top: 16px;
       }
       .badge {
         display: inline-block;
-        padding: 2px 8px;
-        border-radius: 999px;
-        background: #e2e8f0;
-        color: #0f172a;
-        font-size: 12px;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        color: inherit;
+        font-size: 14px;
+        font-weight: 500;
       }
       .copyable {
         cursor: pointer;
@@ -169,30 +182,52 @@
         font-size: 12px;
         color: #64748b;
       }
+      button.step-btn::before {
+        content: attr(data-step) ".";
+        margin-right: 6px;
+        font-weight: 700;
+        color: #e2e8f0;
+      }
+      button.step-btn.outline::before {
+        color: #2563eb;
+      }
+      button.step-btn.secondary::before {
+        color: #e2e8f0;
+      }
       .backend-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
         margin-bottom: 16px;
       }
-      .backend-card {
+      .backend-item {
         border: 1px solid #e2e8f0;
         border-radius: 10px;
-        padding: 12px;
+        padding: 10px 12px;
         background: #f8fafc;
+        display: grid;
+        grid-template-columns: 160px 1fr auto;
+        gap: 10px;
+        align-items: center;
       }
-      .backend-card h4 {
-        margin: 0 0 6px;
-        font-size: 14px;
+      .backend-item h4 {
+        margin: 0;
+        font-size: 13px;
       }
-      .backend-card .meta {
+      .backend-item .meta {
         font-size: 12px;
         color: #475569;
-        margin-bottom: 6px;
+        line-height: 1.4;
       }
-      .backend-card code {
+      .backend-item code {
         font-size: 11px;
         word-break: break-all;
+      }
+      @media (max-width: 960px) {
+        .backend-item {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
       }
       .section {
         border: 1px solid #e2e8f0;
@@ -256,23 +291,54 @@
             <h1>YeYing Dapp Demo</h1>
             <p>模拟 Dapp 连接 YeYing 钱包并完成登录。</p>
           </div>
-          <div class="header-actions">
-            <button id="detectBtn">Detect Provider</button>
-            <button id="connectBtn" class="secondary">Connect Wallet</button>
-          </div>
         </div>
 
       <div class="tabs">
-        <button class="tab-button active" data-tab="siwe">单后端登录 (SIWE)</button>
+        <button class="tab-button active" data-tab="wallet">连接钱包</button>
+        <button class="tab-button" data-tab="siwe">单后端登录 (SIWE)</button>
         <button class="tab-button" data-tab="ucan-multi">多后端登录 (UCAN)</button>
         <button class="tab-button" data-tab="ucan-dapp">DAPP 登录 (UCAN + WebDAV)</button>
       </div>
 
       <div class="tab-body">
-      <div class="tab-content active" data-tab="siwe">
+      <div class="tab-content active" data-tab="wallet">
         <div class="section">
-          <h2>SIWE 登录（单后端）</h2>
-          <div class="hint">用于验证单个后端服务的 SIWE + JWT 登录流程。</div>
+          <div class="hint">检测 Provider 并连接钱包账号。</div>
+          <div class="row">
+            <button id="detectBtn" class="step-btn" data-step="1" title="检测是否注入钱包 Provider（如 YeYing/MetaMask）">Detect Provider</button>
+            <button id="connectBtn" class="secondary step-btn" data-step="2" title="请求钱包授权并返回当前账号">Connect Wallet</button>
+          </div>
+          <div class="note">提示：切换账号请在钱包内切换。</div>
+        </div>
+        <div class="status-slot" data-status-slot="wallet">
+          <div class="status" id="statusPanel">
+            <div class="status-row" data-key="provider">
+              <span>Provider</span><div id="providerStatus" class="badge">Not detected</div>
+            </div>
+            <div class="status-row" data-key="address">
+              <span>Address</span><div id="addressStatus">-</div>
+            </div>
+            <div class="status-row" data-key="chain">
+              <span>Chain</span><div id="chainStatus">-</div>
+            </div>
+            <div class="status-row" data-key="siwe">
+              <span>SIWE Token</span><div id="tokenStatus" class="copyable" title="点击复制">-</div>
+            </div>
+            <div class="status-row" data-key="ucan-session">
+              <span>UCAN Session</span><div id="ucanSessionStatus">-</div>
+            </div>
+            <div class="status-row" data-key="ucan-token">
+              <span>UCAN Token</span><div id="ucanTokenStatus" class="copyable" title="点击复制">-</div>
+            </div>
+            <div class="status-row" data-key="webdav">
+              <span>WebDAV App Dir</span><div id="webdavDirStatus">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" data-tab="siwe">
+        <div class="section">
+          <div class="hint">单后端 SIWE + JWT 登录流程。</div>
           <div class="row">
             <div class="field">
               <label for="baseUrl">Auth Base URL</label>
@@ -280,26 +346,26 @@
             </div>
             <div class="field">
               <label for="protectedUrl">Protected API URL</label>
-              <input id="protectedUrl" value="http://localhost:3203/api/v1/public/profile" />
+              <input id="protectedUrl" value="http://127.0.0.1:3203/api/v1/public/profile" />
             </div>
           </div>
           <div class="row">
-            <button id="loginBtn">Login</button>
-            <button id="profileBtn" class="outline">Call Profile</button>
-            <button id="refreshBtn" class="outline">Refresh Token</button>
-            <button id="logoutBtn" class="secondary">Logout</button>
+            <button id="loginBtn" class="step-btn" data-step="1" title="请求 challenge 并用钱包签名完成登录">Login</button>
+            <button id="profileBtn" class="outline step-btn" data-step="2" title="带 access token 调用受保护接口">Call Profile</button>
+            <button id="refreshBtn" class="outline step-btn" data-step="3" title="使用 refresh cookie 刷新 access token">Refresh Token</button>
+            <button id="logoutBtn" class="secondary step-btn" data-step="4" title="清理 refresh cookie 并退出登录">Logout</button>
           </div>
         </div>
+        <div class="status-slot" data-status-slot="siwe"></div>
       </div>
 
       <div class="tab-content" data-tab="ucan-multi">
         <div class="section">
-          <h2>UCAN 登录（多后端）</h2>
-          <div class="hint">一次 Root UCAN 授权后，可对多个后端分别生成 Invocation UCAN 并访问。</div>
+          <div class="hint">一次 Root UCAN 授权后，可为多个后端生成 Invocation UCAN。</div>
           <div class="row">
             <div class="field">
               <label for="ucanAud">UCAN Audience</label>
-              <input id="ucanAud" value="did:web:localhost:3203" />
+              <input id="ucanAud" value="did:web:127.0.0.1:3203" />
             </div>
             <div class="field">
               <label for="ucanResource">UCAN Resource</label>
@@ -311,22 +377,22 @@
             </div>
           </div>
           <div class="row">
-            <button id="ucanSessionBtn" class="secondary">Init UCAN Session</button>
-            <button id="ucanRootBtn" class="outline">Create Root UCAN</button>
-            <button id="ucanProfileBtn">Call UCAN Profile</button>
-            <button id="ucanAllBtn" class="outline">Call UCAN All</button>
-            <button id="ucanLogoutBtn" class="secondary">Logout</button>
+            <button id="ucanSessionBtn" class="secondary step-btn" data-step="1" title="从钱包获取 UCAN Session Key">Init UCAN Session</button>
+            <button id="ucanRootBtn" class="outline step-btn" data-step="2" title="用 SIWE 生成 Root UCAN（包含能力）">Create Root UCAN</button>
+            <button id="ucanProfileBtn" class="step-btn" data-step="3" title="为单个后端生成 Invocation UCAN 并调用">Call UCAN Profile</button>
+            <button id="ucanAllBtn" class="outline step-btn" data-step="3" title="遍历所有后端生成 Invocation UCAN 并调用">Call UCAN All</button>
+            <button id="ucanLogoutBtn" class="secondary step-btn" data-step="4" title="清理 UCAN Session/Root">Logout</button>
           </div>
 
           <h3>Backends</h3>
           <div class="backend-grid" id="backendList"></div>
         </div>
+        <div class="status-slot" data-status-slot="ucan-multi"></div>
       </div>
 
       <div class="tab-content" data-tab="ucan-dapp">
         <div class="section">
-          <h2>DAPP 登录（UCAN）</h2>
-          <div class="hint">选择一种语言实现的后端，与 WebDAV 同时完成 UCAN 登录。</div>
+          <div class="hint">单后端 UCAN 登录，并与 WebDAV 共享 Session/Root。</div>
           <div class="row">
             <div class="field">
               <label for="dappBackend">DAPP Backend</label>
@@ -334,11 +400,11 @@
             </div>
             <div class="field">
               <label for="dappProtectedUrl">Backend API URL</label>
-              <input id="dappProtectedUrl" value="http://localhost:3203/api/v1/public/profile" />
+              <input id="dappProtectedUrl" value="http://127.0.0.1:3203/api/v1/public/profile" />
             </div>
             <div class="field">
               <label for="dappAud">Backend Audience</label>
-              <input id="dappAud" value="did:web:localhost:3203" />
+              <input id="dappAud" value="did:web:127.0.0.1:3203" />
             </div>
           </div>
           <div class="row">
@@ -352,15 +418,15 @@
             </div>
             <div class="field">
               <label> </label>
-              <div class="note">DAPP Tab 使用 UCAN Session + Root。</div>
+              <div class="note">Session/Root 共享给后端与 WebDAV。</div>
             </div>
           </div>
           <div class="row">
-            <button id="dappSessionBtn" class="secondary">Init UCAN Session</button>
-            <button id="dappRootBtn" class="outline">Create Root UCAN</button>
-            <button id="dappLoginBtn">DAPP Login</button>
-            <button id="dappProfileBtn" class="outline">Call Backend</button>
-            <button id="dappLogoutBtn" class="secondary">Logout</button>
+            <button id="dappSessionBtn" class="secondary step-btn" data-step="1" title="从钱包获取 UCAN Session Key">Init UCAN Session</button>
+            <button id="dappRootBtn" class="outline step-btn" data-step="2" title="用 SIWE 生成 Root UCAN（共享给后端/WebDAV）">Create Root UCAN</button>
+            <button id="dappLoginBtn" class="step-btn" data-step="3" title="生成 Invocation UCAN 并初始化 WebDAV">DAPP Login</button>
+            <button id="dappProfileBtn" class="outline step-btn" data-step="4" title="调用后端接口或 WebDAV 存储操作">Call Backend</button>
+            <button id="dappLogoutBtn" class="secondary step-btn" data-step="5" title="清理 UCAN Session/Root 与 WebDAV 状态">Logout</button>
           </div>
         </div>
 
@@ -370,7 +436,7 @@
           <div class="row">
             <div class="field">
               <label for="webdavBase">WebDAV Base URL</label>
-              <input id="webdavBase" value="http://localhost:6065" />
+              <input id="webdavBase" value="http://127.0.0.1:6065" />
             </div>
             <div class="field">
               <label for="webdavPrefix">WebDAV Prefix</label>
@@ -378,7 +444,7 @@
             </div>
             <div class="field">
               <label for="webdavAud">WebDAV Audience</label>
-              <input id="webdavAud" value="did:web:localhost:6065" />
+              <input id="webdavAud" value="did:web:127.0.0.1:6065" />
             </div>
           </div>
           <div class="row">
@@ -412,27 +478,11 @@
             <button id="webdavDeleteBtn" class="secondary">Delete</button>
           </div>
         </div>
-      </div>
-
-      <div class="status">
-        <span>Provider</span><div id="providerStatus" class="badge">Not detected</div>
-        <span>Address</span><div id="addressStatus">-</div>
-        <span>Chain</span><div id="chainStatus">-</div>
-        <span>SIWE Token</span><div id="tokenStatus" class="copyable" title="点击复制">-</div>
-        <span>UCAN Session</span><div id="ucanSessionStatus">-</div>
-        <span>UCAN Token</span><div id="ucanTokenStatus" class="copyable" title="点击复制">-</div>
-        <span>WebDAV App Dir</span><div id="webdavDirStatus">-</div>
+        <div class="status-slot" data-status-slot="ucan-dapp"></div>
       </div>
 
       <div class="note" id="note">
-        说明：请先执行 <code>npm run build</code>，确保 <code>dist/web3-bs.umd.js</code> 存在。
-        建议通过后端端口打开（如 <code>http://localhost:3203/dapp.html</code>），以便同源 Cookie 刷新。
-        若使用静态服务器，请确保 <code>http://localhost:8001/dapp.html</code> 可访问且 <code>/dist/web3-bs.umd.js</code> 存在。
-        单后端 SIWE、UCAN 多后端、DAPP + WebDAV 分在三个 Tab 页面。
-        SIWE 使用上方单后端配置；UCAN 使用多后端列表或自定义 Audience；DAPP 使用单后端 + WebDAV。
-        UCAN 依赖钱包支持 Session 能力；WebDAV 默认使用 DAPP Resource/Action（可单独覆盖）。
-        点击 Token 即可复制完整值。
-        若提示 No provider found，请确认安装 YeYing 钱包扩展并允许该站点访问。
+        当前页面为 Demo。切换到对应 Tab 后按步骤操作即可。
       </div>
 
       </div>
@@ -457,6 +507,14 @@
         logEl.scrollTop = logEl.scrollHeight;
       }
 
+      appendLog(
+        '说明：请先执行 npm run build，确保 dist/web3-bs.umd.js 存在。' +
+          ' 建议通过后端端口打开（如 http://127.0.0.1:3203/dapp.html），以便同源 Cookie 刷新。' +
+          ' 若使用静态服务器，请确保 http://127.0.0.1:8001/examples/frontend/dapp.html 可访问且 /dist/web3-bs.umd.js 存在。' +
+          ' 点击 Token 即可复制完整值。' +
+          ' 若提示 No provider found，请确认安装 YeYing 钱包扩展并允许该站点访问。'
+      );
+
       function resolveSdkCandidates() {
         const params = new URLSearchParams(window.location.search);
         const override = params.get('sdk');
@@ -467,7 +525,7 @@
         }
         candidates.push('/dist/web3-bs.umd.js');
         [3203, 3201, 3202, 3204].forEach(port => {
-          candidates.push(`http://localhost:${port}/dist/web3-bs.umd.js`);
+          candidates.push(`http://127.0.0.1:${port}/dist/web3-bs.umd.js`);
         });
         return candidates;
       }
@@ -525,6 +583,8 @@
         const webdavDirStatus = document.getElementById('webdavDirStatus');
         const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
         const tabContents = Array.from(document.querySelectorAll('.tab-content'));
+        const statusRows = Array.from(document.querySelectorAll('.status-row'));
+        const statusPanel = document.getElementById('statusPanel');
 
         const detectBtn = document.getElementById('detectBtn');
         const connectBtn = document.getElementById('connectBtn');
@@ -560,33 +620,33 @@
             id: 'go',
             name: 'Go Backend',
             port: 3201,
-            baseUrl: 'http://localhost:3201/api/v1/public/auth',
-            protectedUrl: 'http://localhost:3201/api/v1/public/profile',
-            ucanAud: 'did:web:localhost:3201',
+            baseUrl: 'http://127.0.0.1:3201/api/v1/public/auth',
+            protectedUrl: 'http://127.0.0.1:3201/api/v1/public/profile',
+            ucanAud: 'did:web:127.0.0.1:3201',
           },
           {
             id: 'java',
             name: 'Java Backend',
             port: 3202,
-            baseUrl: 'http://localhost:3202/api/v1/public/auth',
-            protectedUrl: 'http://localhost:3202/api/v1/public/profile',
-            ucanAud: 'did:web:localhost:3202',
+            baseUrl: 'http://127.0.0.1:3202/api/v1/public/auth',
+            protectedUrl: 'http://127.0.0.1:3202/api/v1/public/profile',
+            ucanAud: 'did:web:127.0.0.1:3202',
           },
           {
             id: 'node',
             name: 'Node Backend',
             port: 3203,
-            baseUrl: 'http://localhost:3203/api/v1/public/auth',
-            protectedUrl: 'http://localhost:3203/api/v1/public/profile',
-            ucanAud: 'did:web:localhost:3203',
+            baseUrl: 'http://127.0.0.1:3203/api/v1/public/auth',
+            protectedUrl: 'http://127.0.0.1:3203/api/v1/public/profile',
+            ucanAud: 'did:web:127.0.0.1:3203',
           },
           {
             id: 'python',
             name: 'Python Backend',
             port: 3204,
-            baseUrl: 'http://localhost:3204/api/v1/public/auth',
-            protectedUrl: 'http://localhost:3204/api/v1/public/profile',
-            ucanAud: 'did:web:localhost:3204',
+            baseUrl: 'http://127.0.0.1:3204/api/v1/public/auth',
+            protectedUrl: 'http://127.0.0.1:3204/api/v1/public/profile',
+            ucanAud: 'did:web:127.0.0.1:3204',
           },
         ];
 
@@ -638,6 +698,24 @@
         return true;
       }
 
+      async function syncWalletStatus(nextProvider, options = {}) {
+        if (!nextProvider) {
+          providerStatus.textContent = 'Not detected';
+          addressStatus.textContent = '-';
+          chainStatus.textContent = '-';
+          return;
+        }
+        providerStatus.textContent = nextProvider.isYeYing ? 'YeYing Provider' : 'Injected Provider';
+        const { getAccounts, requestAccounts, getChainId } = window.YeYingWeb3;
+        let accounts = await getAccounts(nextProvider);
+        if (accounts.length === 0 && options.requestIfEmpty) {
+          accounts = await requestAccounts({ provider: nextProvider });
+        }
+        addressStatus.textContent = accounts[0] || '-';
+        const chainId = await getChainId(nextProvider);
+        chainStatus.textContent = chainId || '-';
+      }
+
       function setActiveTab(tabId) {
         tabButtons.forEach(button => {
           const active = button.dataset.tab === tabId;
@@ -647,6 +725,30 @@
           const active = panel.dataset.tab === tabId;
           panel.classList.toggle('active', active);
         });
+        updateStatusVisibility(tabId);
+        moveStatusPanel(tabId);
+      }
+
+      function updateStatusVisibility(tabId) {
+        const visibilityMap = {
+          wallet: ['provider', 'address', 'chain'],
+          siwe: ['provider', 'address', 'chain', 'siwe'],
+          'ucan-multi': ['provider', 'address', 'chain', 'ucan-session', 'ucan-token'],
+          'ucan-dapp': ['provider', 'address', 'chain', 'ucan-session', 'ucan-token', 'webdav'],
+        };
+        const visibleKeys = new Set(visibilityMap[tabId] || []);
+        statusRows.forEach(row => {
+          const key = row.dataset.key || '';
+          row.classList.toggle('hidden', !visibleKeys.has(key));
+        });
+      }
+
+      function moveStatusPanel(tabId) {
+        if (!statusPanel) return;
+        const slot = document.querySelector(`.tab-content[data-tab="${tabId}"] .status-slot`);
+        if (slot && statusPanel.parentElement !== slot) {
+          slot.appendChild(statusPanel);
+        }
       }
 
       function shortenToken(token) {
@@ -899,8 +1001,8 @@
       function renderBackends() {
         backendListEl.textContent = '';
         backendConfigs.forEach(config => {
-          const card = document.createElement('div');
-          card.className = 'backend-card';
+          const item = document.createElement('div');
+          item.className = 'backend-item';
 
           const title = document.createElement('h4');
           title.textContent = `${config.name} (${config.port})`;
@@ -918,10 +1020,10 @@
           button.textContent = 'Use this backend';
           button.addEventListener('click', () => applyBackend(config));
 
-          card.appendChild(title);
-          card.appendChild(meta);
-          card.appendChild(button);
-          backendListEl.appendChild(card);
+          item.appendChild(title);
+          item.appendChild(meta);
+          item.appendChild(button);
+          backendListEl.appendChild(item);
         });
       }
 
@@ -947,8 +1049,8 @@
         const { getProvider } = window.YeYingWeb3;
         provider = await getProvider({ timeoutMs: 3000 });
         if (provider) {
-          providerStatus.textContent = provider.isYeYing ? 'YeYing Provider' : 'Injected Provider';
           log('Provider detected', { isYeYing: provider.isYeYing, isMetaMask: provider.isMetaMask });
+          await syncWalletStatus(provider);
         } else {
           providerStatus.textContent = 'Not detected';
           log('No provider found');
@@ -988,6 +1090,7 @@
         provider = provider || (await window.YeYingWeb3.getProvider({ timeoutMs: 3000 }));
         if (!provider) return log('No provider');
 
+        await syncWalletStatus(provider, { requestIfEmpty: true });
         const login = await loginWithChallenge({
           provider,
           baseUrl: baseUrlInput.value,
@@ -1230,6 +1333,9 @@
       }
       renderBackends();
       setDefaultsFromLocation();
+      const initialTab = document.querySelector('.tab-button.active')?.dataset.tab || 'wallet';
+      updateStatusVisibility(initialTab);
+      moveStatusPanel(initialTab);
 
       if (location.protocol === 'file:') {
         noteEl.textContent =
@@ -1242,7 +1348,7 @@
         .catch(error => {
           noteEl.textContent =
             'SDK 加载失败。请先运行 npm run build 并确保 dist/web3-bs.umd.js 可访问。' +
-            '也可通过 ?sdk=http://localhost:3203/dist/web3-bs.umd.js 指定 SDK 地址。';
+            '也可通过 ?sdk=http://127.0.0.1:3203/dist/web3-bs.umd.js 指定 SDK 地址。';
           appendLog('SDK load failed', { error: String(error) });
         });
     </script>

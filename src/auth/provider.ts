@@ -4,14 +4,52 @@ import {
   ProviderDiscoveryOptions,
   ProviderInfo,
   RequestAccountsOptions,
+  AccountSelection,
+  PreferredAccountOptions,
+  WatchAccountsOptions,
+  AccountsChangedHandler,
 } from './types';
 
 const YEYING_RDNS = 'io.github.yeying';
 const DEFAULT_TIMEOUT = 1000;
+const DEFAULT_ACCOUNT_STORAGE_KEY = 'yeying:last_account';
 
 function getWindowEthereum(): Eip1193Provider | null {
   if (typeof window === 'undefined') return null;
   return (window as unknown as { ethereum?: Eip1193Provider }).ethereum || null;
+}
+
+function readStoredAccount(storageKey: string): string | null {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    return localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredAccount(storageKey: string, account: string | null): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    if (account) {
+      localStorage.setItem(storageKey, account);
+    } else {
+      localStorage.removeItem(storageKey);
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function selectPreferredAccount(
+  accounts: string[],
+  stored: string | null,
+  preferStored: boolean
+): string | null {
+  if (preferStored && stored && accounts.includes(stored)) {
+    return stored;
+  }
+  return accounts[0] || null;
 }
 
 export function isYeYingProvider(provider?: Eip1193Provider | null, info?: ProviderInfo): boolean {
@@ -137,6 +175,37 @@ export async function getChainId(provider?: Eip1193Provider): Promise<string | n
   const p = provider || (await requireProvider());
   const chainId = (await p.request({ method: 'eth_chainId' })) as string;
   return typeof chainId === 'string' ? chainId : null;
+}
+
+export async function getPreferredAccount(
+  options: PreferredAccountOptions = {}
+): Promise<AccountSelection> {
+  const provider = options.provider || (await requireProvider());
+  const storageKey = options.storageKey || DEFAULT_ACCOUNT_STORAGE_KEY;
+  const preferStored = options.preferStored !== false;
+  let accounts = await getAccounts(provider);
+  if (accounts.length === 0 && options.autoConnect) {
+    accounts = await requestAccounts({ provider });
+  }
+  const stored = readStoredAccount(storageKey);
+  const account = selectPreferredAccount(accounts, stored, preferStored);
+  writeStoredAccount(storageKey, account);
+  return { account, accounts };
+}
+
+export function watchAccounts(
+  provider: Eip1193Provider,
+  handler: AccountsChangedHandler,
+  options: WatchAccountsOptions = {}
+): () => void {
+  const storageKey = options.storageKey || DEFAULT_ACCOUNT_STORAGE_KEY;
+  const preferStored = options.preferStored !== false;
+  return onAccountsChanged(provider, (accounts) => {
+    const stored = readStoredAccount(storageKey);
+    const account = selectPreferredAccount(accounts, stored, preferStored);
+    writeStoredAccount(storageKey, account);
+    handler({ account, accounts });
+  });
 }
 
 export async function getBalance(
