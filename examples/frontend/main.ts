@@ -21,6 +21,10 @@ async function connectAndLogin() {
     throw new Error('No account returned');
   }
 
+  const appId = 'demo.example.com';
+  const appCap = { resource: `app:${appId}`, action: 'write' };
+  const profileCap = { resource: 'profile', action: 'read' };
+
   const session = await initDappSession({
     provider,
     address,
@@ -31,8 +35,9 @@ async function connectAndLogin() {
     webdav: {
       baseUrl: 'http://127.0.0.1:6065',
       audience: 'did:web:127.0.0.1:6065',
-      appId: 'web3-bs-demo',
-      capabilities: [{ resource: 'profile', action: 'read' }],
+      appId,
+      capabilities: [appCap, profileCap],
+      invocationCapabilities: [appCap],
     },
   });
 
@@ -80,7 +85,7 @@ async function connectAndLogin() {
   const ucanToken = await createInvocationUcan({
     issuer: session.ucanSession,
     audience: 'did:web:127.0.0.1:3203',
-    capabilities: [{ resource: 'profile', action: 'read' }],
+    capabilities: [profileCap],
     proofs: [session.ucanRoot],
   });
   const ucanRes = await authUcanFetch(

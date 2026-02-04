@@ -20,6 +20,7 @@ type CachedUcanToken = {
 
 const tokenCache = new Map<string, CachedUcanToken>();
 const TOKEN_SKEW_MS = 5000;
+const DEFAULT_APP_ACTION = 'write';
 
 export type InitWebDavStorageOptions = {
   baseUrl: string;
@@ -27,6 +28,7 @@ export type InitWebDavStorageOptions = {
   prefix?: string;
   appDir?: string;
   appId?: string;
+  appAction?: string;
   ensureAppDir?: boolean;
   capabilities?: UcanCapability[];
   invocationCapabilities?: UcanCapability[];
@@ -79,6 +81,42 @@ function sanitizeAppId(appId: string): string {
   return appId.trim().replace(/[^a-zA-Z0-9._-]/g, '-');
 }
 
+function normalizeAction(action?: string): string | null {
+  const trimmed = (action || '').trim();
+  return trimmed ? trimmed : null;
+}
+
+function buildAppCapability(options: InitWebDavStorageOptions): UcanCapability | null {
+  if (!options.appId) return null;
+  const action = normalizeAction(options.appAction) || DEFAULT_APP_ACTION;
+  return {
+    resource: `app:${sanitizeAppId(options.appId)}`,
+    action,
+  };
+}
+
+function hasAppCapability(caps: UcanCapability[]): boolean {
+  return (caps || []).some(cap => typeof cap?.resource === 'string' && cap.resource.startsWith('app:'));
+}
+
+function dedupeCapabilities(caps: UcanCapability[]): UcanCapability[] {
+  const seen = new Set<string>();
+  return (caps || []).filter(cap => {
+    if (!cap || !cap.resource || !cap.action) return false;
+    const key = `${cap.resource}|${cap.action}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function ensureAppCapability(caps: UcanCapability[], options: InitWebDavStorageOptions): UcanCapability[] {
+  const appCap = buildAppCapability(options);
+  if (!appCap) return caps || [];
+  if (hasAppCapability(caps || [])) return caps || [];
+  return dedupeCapabilities([...(caps || []), appCap]);
+}
+
 function resolveAppDir(options: InitWebDavStorageOptions): string | undefined {
   if (options.appDir) {
     return normalizeAppDir(options.appDir);
@@ -95,6 +133,19 @@ function buildCapsKey(caps: UcanCapability[]): string {
 
 function buildTokenCacheKey(issuer: UcanSessionKey, audience: string, caps: UcanCapability[]): string {
   return `${issuer.did}|${audience}|${buildCapsKey(caps)}`;
+}
+
+function resolveWebdavCaps(options: InitWebDavStorageOptions): UcanCapability[] {
+  const baseCaps = options.capabilities || options.root?.cap || [];
+  return ensureAppCapability(baseCaps, options);
+}
+
+function resolveInvocationCaps(
+  options: InitWebDavStorageOptions,
+  fallbackCaps: UcanCapability[]
+): UcanCapability[] {
+  const caps = options.invocationCapabilities || fallbackCaps;
+  return ensureAppCapability(caps, options);
 }
 
 function isTokenValid(entry: CachedUcanToken, nowMs: number): boolean {
@@ -178,7 +229,7 @@ async function getCachedInvocationToken(options: {
 export async function initWebDavStorage(
   options: InitWebDavStorageOptions
 ): Promise<InitWebDavStorageResult> {
-  const caps = options.capabilities || options.root?.cap;
+  const caps = resolveWebdavCaps(options);
   if (!caps || caps.length === 0) {
     throw new Error('Missing UCAN capabilities for WebDAV');
   }
@@ -215,7 +266,7 @@ export async function initWebDavStorage(
     });
   }
 
-  const invocationCaps = options.invocationCapabilities || caps;
+  const invocationCaps = resolveInvocationCaps(options, caps);
 
   const token = await getCachedInvocationToken({
     issuer: session,

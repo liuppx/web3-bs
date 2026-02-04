@@ -430,9 +430,9 @@
           </div>
         </div>
 
-        <div class="section">
+          <div class="section">
           <h2>WebDAV 存储（UCAN）</h2>
-          <div class="hint">使用 UCAN token 访问 WebDAV（需服务端开启 UCAN）；首次操作会自动创建应用目录。</div>
+          <div class="hint">使用 UCAN token 访问 WebDAV（需服务端开启 UCAN）；首次操作会自动创建应用目录。资源建议用 app:&lt;appId&gt;，appId 建议为前端地址。</div>
           <div class="row">
             <div class="field">
               <label for="webdavBase">WebDAV Base URL</label>
@@ -449,16 +449,16 @@
           </div>
           <div class="row">
             <div class="field">
-              <label for="webdavResource">WebDAV Resource</label>
-              <input id="webdavResource" value="profile" />
+              <label for="webdavResource">WebDAV Resource（建议 app:&lt;appId&gt;）</label>
+              <input id="webdavResource" value="app:127.0.0.1:8001" />
             </div>
             <div class="field">
               <label for="webdavAction">WebDAV Action</label>
-              <input id="webdavAction" value="read" />
+              <input id="webdavAction" value="write" />
             </div>
             <div class="field">
-              <label for="webdavAppId">App ID（映射为 /apps/&lt;appId&gt;）</label>
-              <input id="webdavAppId" value="web3-bs-demo" />
+              <label for="webdavAppId">App ID（建议为前端地址，映射为 /apps/&lt;appId&gt;）</label>
+              <input id="webdavAppId" value="127.0.0.1:8001" />
             </div>
           </div>
           <div class="row">
@@ -782,6 +782,17 @@
         return { resource: res, action: act };
       }
 
+      function sanitizeAppId(appId) {
+        return (appId || '').trim().replace(/[^a-zA-Z0-9._-]/g, '-');
+      }
+
+      function buildAppCap(appId, action) {
+        const sanitized = sanitizeAppId(appId);
+        if (!sanitized) return null;
+        const act = (action || '').trim() || 'write';
+        return makeCap(`app:${sanitized}`, act);
+      }
+
       function dedupeCaps(caps) {
         const seen = new Set();
         return (caps || []).filter(cap => {
@@ -808,8 +819,10 @@
       }
 
       function resolveWebdavCaps() {
-        const cap = makeCap(webdavResourceInput.value, webdavActionInput.value);
-        if (cap) return [cap];
+        const explicitCap = makeCap(webdavResourceInput.value, webdavActionInput.value);
+        if (explicitCap) return [explicitCap];
+        const appCap = buildAppCap(webdavAppIdInput.value, webdavActionInput.value);
+        if (appCap) return [appCap];
         return resolveDappCaps();
       }
 
@@ -1035,12 +1048,20 @@
         if (matched) {
           applyBackend(matched, { silent: true });
           applyDappBackend(matched, { silent: true });
-          return;
         }
         const fallback = backendConfigs.find(config => config.id === 'node') || backendConfigs[0];
         if (fallback) {
           applyBackend(fallback, { silent: true });
           applyDappBackend(fallback, { silent: true });
+        }
+        const host = location.host || '';
+        if (host) {
+          if (webdavAppIdInput && (webdavAppIdInput.value === '127.0.0.1:8001' || webdavAppIdInput.value === '')) {
+            webdavAppIdInput.value = host;
+          }
+          if (webdavResourceInput && (webdavResourceInput.value === 'app:127.0.0.1:8001' || webdavResourceInput.value === '')) {
+            webdavResourceInput.value = `app:${host}`;
+          }
         }
       }
 
