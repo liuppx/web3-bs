@@ -92,6 +92,8 @@ const { account } = await getPreferredAccount({
 });
 ```
 
+`requestAccounts` 默认会对同一 provider 的并发连接请求做去重。业务按钮仍建议在提交中展示 loading/disabled 状态，但 SDK 会避免重复点击直接触发多个 `eth_requestAccounts`。
+
 ### 3.2 账户变更处理
 
 账户变化后建议清理认证与授权缓存，重新发起登录授权流程：

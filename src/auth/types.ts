@@ -63,6 +63,7 @@ export type WalletErrorInfo = {
 
 export interface RequestAccountsOptions {
   provider?: Eip1193Provider;
+  dedupe?: boolean;
 }
 
 export type AccountSelection = {

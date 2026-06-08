@@ -27,6 +27,8 @@ npm install @yeying-community/web3-bs
 - `onAccountsChanged` / `onChainChanged`
 - `classifyWalletError` / `isUserRejectedWalletAction` / `isWalletReconnectError`
 
+`requestAccounts` 默认会复用同一 provider 上尚未完成的连接请求，避免用户重复点击时触发多个钱包授权弹窗。
+
 ### 2) SIWE + JWT
 
 - `signMessage`

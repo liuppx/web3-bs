@@ -18,6 +18,7 @@ const DEFAULT_TIMEOUT = 1000;
 const DEFAULT_ACCOUNT_STORAGE_KEY = 'yeying:last_account';
 const DEFAULT_PROVIDER_POLL_INTERVAL = 100;
 const DEFAULT_PROVIDER_MAX_POLLS = 20;
+const requestAccountsInFlight = new WeakMap<Eip1193Provider, Promise<string[]>>();
 
 function isProvider(value: unknown): value is Eip1193Provider {
   return !!value && typeof (value as Eip1193Provider).request === 'function';
@@ -328,10 +329,24 @@ export async function requestAccounts(
   options: RequestAccountsOptions = {}
 ): Promise<string[]> {
   const provider = options.provider || (await requireProvider());
-  const accounts = (await provider.request({
+  const dedupe = options.dedupe !== false;
+  if (dedupe) {
+    const pending = requestAccountsInFlight.get(provider);
+    if (pending) return pending;
+  }
+
+  const request = provider.request({
     method: 'eth_requestAccounts',
-  })) as string[];
-  return Array.isArray(accounts) ? accounts : [];
+  }).then(accounts => (Array.isArray(accounts) ? accounts : []));
+
+  if (!dedupe) return request;
+
+  requestAccountsInFlight.set(provider, request);
+  try {
+    return await request;
+  } finally {
+    requestAccountsInFlight.delete(provider);
+  }
 }
 
 export async function getAccounts(provider?: Eip1193Provider): Promise<string[]> {
