@@ -5,3 +5,4 @@ export * from './ucan';
 export * from './central';
 export * from './encrypt';
 export * from './profile';
+export * from './passport';

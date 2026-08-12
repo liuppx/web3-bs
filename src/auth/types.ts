@@ -150,6 +150,42 @@ export interface LoginWithChallengeOptions extends AuthBaseOptions {
   signMethod?: 'personal_sign' | 'eth_sign';
 }
 
+export type PassportIdentityScope = 'identity.basic' | 'identity.wallet' | 'identity.email';
+
+export interface PassportAssertionOptions {
+  provider?: Eip1193Provider;
+  appId: string;
+  audience: string;
+  nonce: string;
+  scope?: PassportIdentityScope[];
+  scopes?: PassportIdentityScope[];
+  passportEndpoint?: string;
+  statement?: string;
+  requestId?: string;
+  ensureConnected?: boolean;
+}
+
+export interface WalletProof {
+  type?: string;
+  method: 'personal_sign' | string;
+  address: string;
+  message: string;
+  signature: string;
+  appId: string;
+  audience: string;
+  nonce: string;
+  scopes: PassportIdentityScope[] | string[];
+  origin?: string;
+  requestId?: string;
+}
+
+export interface PassportAssertionResult {
+  address: string;
+  walletProof: WalletProof;
+  passportAssertion: string;
+  response?: unknown;
+}
+
 export interface RefreshAccessTokenOptions extends AuthBaseOptions {
   refreshPath?: string;
 }
