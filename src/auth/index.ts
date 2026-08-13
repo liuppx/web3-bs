@@ -6,3 +6,4 @@ export * from './central';
 export * from './encrypt';
 export * from './profile';
 export * from './passport';
+export * from './identity';

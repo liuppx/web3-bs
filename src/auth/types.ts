@@ -152,6 +152,54 @@ export interface LoginWithChallengeOptions extends AuthBaseOptions {
 
 export type PassportIdentityScope = 'identity.basic' | 'identity.wallet' | 'identity.email';
 
+export type IdentityPresentationScope = 'identity.basic' | 'identity.wallet' | 'identity.username' | 'identity.email';
+
+export type IdentityPresentationRequest = {
+  appId: string;
+  audience: string;
+  nonce: string;
+  scopes: IdentityPresentationScope[];
+  account?: { chainKey: string; address: string };
+  issuer?: string;
+  expiresAt?: string;
+  statement?: string;
+  requestId?: string;
+};
+
+export type IdentityPresentation = {
+  version: 1;
+  holder: string;
+  audience: string;
+  nonce: string;
+  issuedAt: string;
+  expiresAt: string;
+  scopes: IdentityPresentationScope[];
+  identityDocument?: Record<string, unknown>;
+  walletProof?: Record<string, unknown>;
+  credentials?: string[];
+  proof: {
+    type: 'YeyingIdentityPresentationProofV1';
+    verificationMethod: string;
+    purpose: 'authentication';
+    proofValue: string;
+  };
+};
+
+export type IdentityPresentationValidationOptions = {
+  expectedAudience: string;
+  expectedNonce: string;
+  expectedScopes?: IdentityPresentationScope[];
+  now?: number;
+  clockSkewSeconds?: number;
+};
+
+export type IdentityPresentationCredentialValidationOptions = IdentityPresentationValidationOptions & {
+  issuer: string;
+  publicJwk: JsonWebKey;
+  nodeBaseUrl?: string;
+  fetcher?: typeof fetch;
+};
+
 export interface PassportAssertionOptions {
   provider?: Eip1193Provider;
   appId: string;
