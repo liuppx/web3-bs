@@ -45,6 +45,18 @@ test('identity presentation verifies controller proof and request context', asyn
   await assert.rejects(() => verifyIdentityPresentation(presentation, { expectedAudience: unsigned.audience, expectedNonce: 'wrong' }), /IDENTITY_PRESENTATION_CONTEXT_MISMATCH/)
 })
 
+test('identity presentation verifies the Wallet V1 raw controller key format', async () => {
+  const pair = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify'])
+  const rawPublicKey = Buffer.from(await crypto.subtle.exportKey('raw', pair.publicKey)).toString('base64url')
+  const holder = 'did:yeying:wid_wallet_v1'
+  const document = { id: holder, controllers: [{ controllerId: 'wallet-controller', publicKey: rawPublicKey, algorithm: 'Ed25519', purposes: ['authentication'], status: 'active' }] }
+  const unsigned = { version: 1, holder, audience: 'https://app.example', nonce: 'nonce-wallet-v1', issuedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString(), scopes: ['identity.basic'], identityDocument: document }
+  const canonicalize = value => value === null ? 'null' : typeof value !== 'object' ? JSON.stringify(value) : Array.isArray(value) ? `[${value.map(canonicalize).join(',')}]` : `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalize(value[key])}`).join(',')}}`
+  const signature = await crypto.subtle.sign({ name: 'Ed25519' }, pair.privateKey, new TextEncoder().encode(canonicalize(unsigned)))
+  const proof = { type: 'YeyingIdentityPresentationProofV1', verificationMethod: `${holder}#wallet-controller`, purpose: 'authentication', proofValue: Buffer.from(signature).toString('base64url') }
+  assert.equal((await verifyIdentityPresentation({ ...unsigned, proof }, { expectedAudience: unsigned.audience, expectedNonce: unsigned.nonce })).holder, holder)
+})
+
 test('identity presentation credentials verify JWT-VC and active status', async () => {
   const controller = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify'])
   const controllerJwk = await crypto.subtle.exportKey('jwk', controller.publicKey)

@@ -123,15 +123,16 @@ export async function verifyIdentityPresentation(presentation: unknown, options:
   const now = (options.now ?? Date.now() / 1000) * 1000
   if (!Number.isFinite(issued) || !Number.isFinite(expires) || issued > now + skew * 1000 || expires <= now - skew * 1000) throw new Error('IDENTITY_PRESENTATION_EXPIRED')
   const method = value.proof.verificationMethod
-  if (method !== `${value.holder}#controller-1`) throw new Error('IDENTITY_PRESENTATION_PROOF_INVALID')
   const document = value.identityDocument as Record<string, unknown> | undefined
   const controllers = Array.isArray(document?.controllers) ? document.controllers : []
-  const controller = controllers.find((item) => item && typeof item === 'object' && (item as Record<string, unknown>).id === 'controller-1') as Record<string, unknown> | undefined
-  const publicKey = controller?.publicKey as JsonWebKey | undefined
+  const controller = controllers.find((item) => item && typeof item === 'object' && method === `${value.holder}#${String((item as Record<string, unknown>).controllerId || (item as Record<string, unknown>).id || '')}`) as Record<string, unknown> | undefined
+  const publicKey = controller?.publicKey as JsonWebKey | string | undefined
   if (!publicKey) throw new Error('IDENTITY_PRESENTATION_KEY_MISSING')
   const { proof, ...unsigned } = value as unknown as Record<string, unknown>
   try {
-    const key = await globalThis.crypto.subtle.importKey('jwk', publicKey, { name: 'Ed25519' }, false, ['verify'])
+    const key = typeof publicKey === 'string'
+      ? await globalThis.crypto.subtle.importKey('raw', decodeBase64Url(publicKey), { name: 'Ed25519' }, false, ['verify'])
+      : await globalThis.crypto.subtle.importKey('jwk', publicKey, { name: 'Ed25519' }, false, ['verify'])
     const valid = await globalThis.crypto.subtle.verify({ name: 'Ed25519' }, key, decodeBase64Url(value.proof.proofValue), new TextEncoder().encode(canonicalize(unsigned)))
     if (!valid) throw new Error('IDENTITY_PRESENTATION_PROOF_INVALID')
   } catch (error) {
