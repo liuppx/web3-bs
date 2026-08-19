@@ -200,6 +200,21 @@ export type IdentityPresentationCredentialValidationOptions = IdentityPresentati
   fetcher?: typeof fetch;
 };
 
+export type WalletIdentityLoginOptions = AuthBaseOptions & {
+  provider?: Eip1193Provider;
+  address?: string;
+  sessionPath?: string;
+  verifyPath?: string;
+  accountChallengePath?: string;
+  accountVerifyPath?: string;
+};
+
+export type WalletIdentityLoginResult = {
+  token: string;
+  address: string;
+  response: unknown;
+};
+
 export interface PassportAssertionOptions {
   provider?: Eip1193Provider;
   appId: string;

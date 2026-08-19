@@ -59,8 +59,9 @@ export async function queryCredentialStatuses(nodeBaseUrl: string, issuer: strin
   if (envelope.code !== 0 || !envelope.data) throw new Error('IDENTITY_CREDENTIAL_STATUS_UNKNOWN')
   return envelope.data
 }
-import { requestAccounts, requireProvider } from './provider'
-import type { Eip1193Provider, IdentityPresentation, IdentityPresentationRequest, IdentityPresentationScope, IdentityPresentationValidationOptions, IdentityPresentationCredentialValidationOptions } from './types'
+import { getChainId, requestAccounts, requireProvider } from './provider'
+import { signMessage, setAccessToken } from './siwe'
+import type { Eip1193Provider, IdentityPresentation, IdentityPresentationRequest, IdentityPresentationScope, IdentityPresentationValidationOptions, IdentityPresentationCredentialValidationOptions, WalletIdentityLoginOptions, WalletIdentityLoginResult } from './types'
 
 const ALLOWED_SCOPES: IdentityPresentationScope[] = ['identity.basic', 'identity.wallet', 'identity.username', 'identity.email']
 
@@ -110,6 +111,59 @@ export async function requestIdentityPresentation(options: IdentityPresentationR
   }
   const response = await provider.request({ method: 'yeying_identity_presentation', params: [request] })
   return normalizePresentation(response)
+}
+
+function identityLoginUrl(baseUrl: string, path: string) {
+  return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+}
+
+async function identityLoginPost(fetcher: typeof fetch, credentials: RequestCredentials, url: string, body: unknown) {
+  const response = await fetcher(url, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' }, credentials, body: JSON.stringify(body) })
+  const payload = await response.json() as { code?: number; message?: string; data?: Record<string, any> }
+  if (!response.ok || payload.code) throw Object.assign(new Error(payload.message || 'WALLET_IDENTITY_LOGIN_FAILED'), { payload })
+  return payload.data || {}
+}
+
+function normalizedChainKey(chainId: string | null) {
+  if (!chainId) return 'eip155:1'
+  const value = chainId.startsWith('0x') ? Number.parseInt(chainId, 16).toString() : chainId
+  return `eip155:${value}`
+}
+
+export async function loginWithWalletIdentity(options: WalletIdentityLoginOptions = {}): Promise<WalletIdentityLoginResult> {
+  const provider = options.provider || await requireProvider()
+  const accounts = await requestAccounts({ provider })
+  const address = options.address || accounts[0]
+  if (!address) throw new Error('WALLET_ACCOUNT_REQUIRED')
+  const fetcher = options.fetcher || fetch
+  const credentials = options.credentials ?? 'include'
+  const baseUrl = options.baseUrl || '/api/v1/public/auth'
+  const sessionUrl = identityLoginUrl(baseUrl, options.sessionPath || 'identity/login/session')
+  const verifyUrl = identityLoginUrl(baseUrl, options.verifyPath || 'identity/login/verify')
+  const accountChallengeUrl = identityLoginUrl(baseUrl, options.accountChallengePath || 'identity/account/challenge')
+  const accountVerifyUrl = identityLoginUrl(baseUrl, options.accountVerifyPath || 'identity/account/verify')
+
+  const login = async (allowAccountProof: boolean): Promise<WalletIdentityLoginResult> => {
+    const session = await identityLoginPost(fetcher, credentials, sessionUrl, { address })
+    const presentation = await requestIdentityPresentation({ provider, appId: session.app_id || session.appId, audience: session.audience, nonce: session.nonce, scopes: session.scopes, requestId: session.request_id || session.requestId, account: { chainKey: normalizedChainKey(await getChainId(provider)), address }, ensureConnected: false })
+    try {
+      const result = await identityLoginPost(fetcher, credentials, verifyUrl, { session_id: session.session_id, request_id: session.request_id, address, presentation })
+      const token = String(result.token || '')
+      if (!token) throw new Error('WALLET_IDENTITY_TOKEN_MISSING')
+      if (options.storeToken !== false) setAccessToken(token, options)
+      return { token, address, response: result }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      if (!allowAccountProof || !/尚未绑定|完成身份绑定/.test(message)) throw error
+      if (!presentation.holder || !presentation.identityDocument) throw new Error('WALLET_IDENTITY_DOCUMENT_REQUIRED')
+      const chainKey = normalizedChainKey(await getChainId(provider))
+      const challenge = await identityLoginPost(fetcher, credentials, accountChallengeUrl, { identity: presentation.holder, chainKey, address })
+      const accountSignature = await signMessage({ provider, address, message: challenge.message })
+      await identityLoginPost(fetcher, credentials, accountVerifyUrl, { identityDocument: presentation.identityDocument, identity: presentation.holder, chainKey, address, nonce: challenge.nonce, issuedAt: challenge.issuedAt, expiresAt: challenge.expiresAt, accountSignature, walletIdentityId: presentation.holder.replace(/^did:yeying:/, '') })
+      return login(false)
+    }
+  }
+  return login(true)
 }
 
 export async function verifyIdentityPresentation(presentation: unknown, options: IdentityPresentationValidationOptions): Promise<IdentityPresentation> {
