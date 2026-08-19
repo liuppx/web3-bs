@@ -119,7 +119,7 @@ function identityLoginUrl(baseUrl: string, path: string) {
 
 async function identityLoginPost(fetcher: typeof fetch, credentials: RequestCredentials, url: string, body: unknown) {
   const response = await fetcher(url, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' }, credentials, body: JSON.stringify(body) })
-  const payload = await response.json() as { code?: number; message?: string; data?: Record<string, any> }
+  const payload = await response.json() as { code?: number; message?: string; reason?: string; data?: Record<string, any> }
   if (!response.ok || payload.code) throw Object.assign(new Error(payload.message || 'WALLET_IDENTITY_LOGIN_FAILED'), { payload })
   return payload.data || {}
 }
@@ -153,8 +153,8 @@ export async function loginWithWalletIdentity(options: WalletIdentityLoginOption
       if (options.storeToken !== false) setAccessToken(token, options)
       return { token, address, response: result }
     } catch (error) {
-      const message = error instanceof Error ? error.message : ''
-      if (!allowAccountProof || !/尚未绑定|完成身份绑定/.test(message)) throw error
+      const reason = (error as { payload?: { reason?: string } })?.payload?.reason
+      if (!allowAccountProof || reason !== 'wallet_confirmation_required') throw error
       if (!presentation.holder || !presentation.identityDocument) throw new Error('WALLET_IDENTITY_DOCUMENT_REQUIRED')
       const chainKey = normalizedChainKey(await getChainId(provider))
       const challenge = await identityLoginPost(fetcher, credentials, accountChallengeUrl, { identity: presentation.holder, chainKey, address })
