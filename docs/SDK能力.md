@@ -48,7 +48,7 @@
 | 标准消息签名 | ✅ | ✅ | ❌ | `signMessage` |
 | challenge / SIWE 登录 | ✅ | ✅ | ❌ | `loginWithChallenge` |
 | access token 缓存 / refresh | ✅ | ✅ | ✅ | `setAccessToken` / `authFetch` / `refreshAccessToken` |
-| 钱包用户名 / 邮箱授权 | ✅ | ❌ | ❌ | `connectAndGetWalletProfile` / `getWalletProfile` |
+| 钱包身份 / 邮箱授权 | ✅ | ❌ | ❌ | `loginWithWalletIdentity` / `yeying_identity_presentation` |
 | UCAN Session 创建 | ✅ | ⚠️ | ❌ | 优先 `yeying_ucan_session`；不可用时使用本地 session |
 | UCAN Root / Invocation | ✅ | ⚠️ | ❌ | Root 走 SIWE；Invocation 走 UCAN 签名 |
 | 多后端 UCAN 授权 | ✅ | ⚠️ | ❌ | 通过 delegation/invocation 按 audience/capability 下发 |
@@ -232,19 +232,20 @@ const unsubscribe = watchAccounts(provider, () => {
 
 详细用法、安全模型、限制见 [`加解密服务.md`](./加解密服务.md)。
 
-### 5.7 Passport-backed Wallet Login
+### 5.7 Wallet Identity Login
 
-- `requestPassportAssertion` — 调用钱包插件的 `yeying_passport_assertion`，返回 `address + walletProof + passportAssertion`。
-- `normalizePassportScopes` — 去重 scope，并确保包含 `identity.basic`。
+- `loginWithWalletIdentity` — 创建应用登录 session，请求 Wallet 出示 `yeying_identity_presentation`，再把 presentation 交给应用后端验证。
+- `requestIdentityPresentation` — 直接调用钱包插件的 `yeying_identity_presentation`。
+- `verifyIdentityPresentation` / `verifyIdentityPresentationCredentials` — 后端或同构环境可复用的 presentation 与 JWT-VC 校验辅助。
 
-第三方应用前端只负责把后端生成的 `appId`、`audience`、`nonce`、`scope` 传给 Wallet；登录是否成功由应用后端校验 `walletProof` 和 Node `passportAssertion` 后决定。已有 SIWE 登录接口的应用优先复用 `POST /api/v1/public/auth/challenge` 和 `POST /api/v1/public/auth/verify`，通过 `scope` 扩展；仅需地址时继续使用 `loginWithChallenge`。邮箱只信任 Passport assertion / exchange claims 中 `emailVerified=true` 的结果。
+第三方应用前端只负责把后端生成的 `appId`、`audience`、`nonce`、scope 传给 Wallet；登录是否成功由应用后端校验钱包身份 presentation 后决定。仅需地址时继续使用 `loginWithChallenge`。需要邮箱时，请求 `identity.email` scope，并以后端验证过的 `EmailCredential` 为准。
 
 ## 6. 推荐接入组合
 
 | 场景 | 推荐组合 |
 | --- | --- |
 | 插件钱包 + 单后端登录 | `getProvider` + `requestAccounts` + `loginWithChallenge` + `authFetch` |
-| 插件钱包 + Passport 身份/邮箱登录 | `getProvider` + `requestAccounts` + 现有 `auth/challenge(scope=identity.*)` + `requestPassportAssertion` + 现有 `auth/verify` |
+| 插件钱包 + 钱包身份/邮箱登录 | `getProvider` + `requestAccounts` + `loginWithWalletIdentity` + 后端校验 presentation / JWT-VC |
 | 插件钱包 + UCAN 多后端 | `createUcanSession` + `getOrCreateUcanRoot` + `createInvocationUcan` |
 | App 钱包 + 登录 | `requestAccounts` + `signMessage` + `loginWithChallenge` + `authFetch` |
 | 中心化 JWT | `setAccessToken` + `authFetch` + `createWebDavClient` |
