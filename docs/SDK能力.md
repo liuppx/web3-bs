@@ -234,7 +234,7 @@ const unsubscribe = watchAccounts(provider, () => {
 
 ### 5.7 Wallet Identity Login
 
-- `loginWithWalletIdentity` — 创建应用登录 session，请求 Wallet 出示 `yeying_identity_presentation`，再把 presentation 交给应用后端验证。
+- `loginWithWalletIdentity` — 创建应用登录 session，请求 Wallet 出示 `yeying_identity_presentation`，再把 presentation 交给应用后端验证；返回值顶层包含 `did` 和 `walletAddress`，其中 `did` 是 Web3 应用应保存的身份主键。
 - `requestIdentityPresentation` — 直接调用钱包插件的 `yeying_identity_presentation`。
 - `verifyIdentityPresentation` / `verifyIdentityPresentationCredentials` — 后端或同构环境可复用的 presentation 与 JWT-VC 校验辅助。
 

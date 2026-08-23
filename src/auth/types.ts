@@ -209,6 +209,9 @@ export type WalletIdentityLoginOptions = AuthBaseOptions & {
 
 export type WalletIdentityLoginResult = {
   token: string;
+  did: string;
+  walletAddress?: string;
+  /** @deprecated use walletAddress for the verified wallet account. */
   address: string;
   response: unknown;
 };

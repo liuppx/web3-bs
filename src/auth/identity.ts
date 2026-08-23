@@ -152,7 +152,10 @@ export async function loginWithWalletIdentity(options: WalletIdentityLoginOption
       const token = String(result.token || '')
       if (!token) throw new Error('WALLET_IDENTITY_TOKEN_MISSING')
       if (options.storeToken !== false) setAccessToken(token, options)
-      return { token, address, response: result }
+      const did = String(result.did || presentation.holder || '')
+      if (!did) throw new Error('WALLET_IDENTITY_DID_MISSING')
+      const walletAddress = String(result.walletAddress || result.wallet_address || address || '')
+      return { token, did, walletAddress, address: walletAddress, response: result }
     } catch (error) {
       const reason = (error as { payload?: { reason?: string } })?.payload?.reason
       if (!allowAccountProof || reason !== 'wallet_confirmation_required') throw error
@@ -160,7 +163,7 @@ export async function loginWithWalletIdentity(options: WalletIdentityLoginOption
       const chainKey = normalizedChainKey(await getChainId(provider))
       const challenge = await identityLoginPost(fetcher, credentials, accountChallengeUrl, { identity: presentation.holder, chainKey, address })
       const accountSignature = await signMessage({ provider, address, message: challenge.message })
-      await identityLoginPost(fetcher, credentials, accountVerifyUrl, { identityDocument: presentation.identityDocument, identity: presentation.holder, chainKey, address, nonce: challenge.nonce, issuedAt: challenge.issuedAt, expiresAt: challenge.expiresAt, accountSignature, walletIdentityId: presentation.holder.replace(/^did:yeying:/, '') })
+      await identityLoginPost(fetcher, credentials, accountVerifyUrl, { identityDocument: presentation.identityDocument, identity: presentation.holder, chainKey, address, nonce: challenge.nonce, issuedAt: challenge.issuedAt, expiresAt: challenge.expiresAt, accountSignature })
       return login(false)
     }
   }

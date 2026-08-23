@@ -82,6 +82,9 @@ test('wallet identity login does not require appId in local presentation session
   const result = await loginWithWalletIdentity({ provider, fetcher, baseUrl: 'http://router.local/api/v1/public/auth', storeToken: false })
 
   assert.equal(result.token, 'token-1')
+  assert.equal(result.did, 'did:yeying:wid_test')
+  assert.equal(result.walletAddress, '0x1234567890123456789012345678901234567890')
+  assert.equal(result.address, '0x1234567890123456789012345678901234567890')
   assert.equal(identityRequest.appId, undefined)
   assert.equal(identityRequest.audience, 'http://router.local')
   assert.equal(identityRequest.nonce, 'nonce-1')
