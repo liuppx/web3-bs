@@ -99,10 +99,10 @@ export async function requestIdentityPresentation(options: IdentityPresentationR
   if (options.ensureConnected !== false) await requestAccounts({ provider })
   const scopes = normalizeScopes(options.scopes)
   const request = {
-    appId: required(options.appId, 'appId'),
     audience: required(options.audience, 'audience'),
     nonce: required(options.nonce, 'nonce'),
     scopes,
+    ...(options.appId ? { appId: options.appId } : {}),
     ...(options.account ? { account: options.account } : {}),
     ...(options.issuer ? { issuer: options.issuer } : {}),
     ...(options.expiresAt ? { expiresAt: options.expiresAt } : {}),
@@ -145,7 +145,8 @@ export async function loginWithWalletIdentity(options: WalletIdentityLoginOption
 
   const login = async (allowAccountProof: boolean): Promise<WalletIdentityLoginResult> => {
     const session = await identityLoginPost(fetcher, credentials, sessionUrl, { address })
-    const presentation = await requestIdentityPresentation({ provider, appId: session.app_id || session.appId, audience: session.audience, nonce: session.nonce, scopes: session.scopes, requestId: session.request_id || session.requestId, account: { chainKey: normalizedChainKey(await getChainId(provider)), address }, ensureConnected: false })
+    const appId = session.app_id || session.appId
+    const presentation = await requestIdentityPresentation({ provider, ...(appId ? { appId } : {}), audience: session.audience, nonce: session.nonce, scopes: session.scopes, requestId: session.request_id || session.requestId, account: { chainKey: normalizedChainKey(await getChainId(provider)), address }, ensureConnected: false })
     try {
       const result = await identityLoginPost(fetcher, credentials, verifyUrl, { session_id: session.session_id, request_id: session.request_id, address, presentation })
       const token = String(result.token || '')

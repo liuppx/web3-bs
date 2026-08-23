@@ -153,7 +153,7 @@ export interface LoginWithChallengeOptions extends AuthBaseOptions {
 export type IdentityPresentationScope = 'identity.basic' | 'identity.wallet' | 'identity.username' | 'identity.email';
 
 export type IdentityPresentationRequest = {
-  appId: string;
+  appId?: string;
   audience: string;
   nonce: string;
   scopes: IdentityPresentationScope[];

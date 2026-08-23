@@ -238,7 +238,7 @@ const unsubscribe = watchAccounts(provider, () => {
 - `requestIdentityPresentation` — 直接调用钱包插件的 `yeying_identity_presentation`。
 - `verifyIdentityPresentation` / `verifyIdentityPresentationCredentials` — 后端或同构环境可复用的 presentation 与 JWT-VC 校验辅助。
 
-第三方应用前端只负责把后端生成的 `appId`、`audience`、`nonce`、scope 传给 Wallet；登录是否成功由应用后端校验钱包身份 presentation 后决定。仅需地址时继续使用 `loginWithChallenge`。需要邮箱时，请求 `identity.email` scope，并以后端验证过的 `EmailCredential` 为准。
+第三方应用前端只负责把后端生成的 `audience`、`nonce`、scope 传给 Wallet；`appId` 仅作为可选展示上下文，不是钱包身份 presentation 的必需字段，也不应被当作 Node 应用主键。登录是否成功由应用后端校验钱包身份 presentation 后决定。仅需地址时继续使用 `loginWithChallenge`。需要邮箱时，请求 `identity.email` scope，并以后端验证过的 `EmailCredential` 为准。
 
 ## 6. 推荐接入组合
 

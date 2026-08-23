@@ -3,7 +3,7 @@ import test from 'node:test'
 import { webcrypto } from 'node:crypto'
 
 globalThis.crypto ||= webcrypto
-const { verifyIdentityCredential, queryCredentialStatuses, verifyIdentityPresentation, verifyIdentityPresentationCredentials } = await import('../dist/web3-bs.esm.js')
+const { verifyIdentityCredential, queryCredentialStatuses, verifyIdentityPresentation, verifyIdentityPresentationCredentials, loginWithWalletIdentity } = await import('../dist/web3-bs.esm.js')
 
 function b64(value) { return Buffer.from(value).toString('base64url') }
 
@@ -43,6 +43,48 @@ test('identity presentation verifies controller proof and request context', asyn
   const presentation = { ...unsigned, proof: { type: 'YeyingIdentityPresentationProofV1', verificationMethod: `${holder}#controller-1`, purpose: 'authentication', proofValue: Buffer.from(signature).toString('base64url') } }
   assert.equal((await verifyIdentityPresentation(presentation, { expectedAudience: unsigned.audience, expectedNonce: unsigned.nonce, expectedScopes: ['identity.basic'] })).holder, holder)
   await assert.rejects(() => verifyIdentityPresentation(presentation, { expectedAudience: unsigned.audience, expectedNonce: 'wrong' }), /IDENTITY_PRESENTATION_CONTEXT_MISMATCH/)
+})
+
+test('wallet identity login does not require appId in local presentation sessions', async () => {
+  let identityRequest
+  const provider = {
+    async request({ method, params }) {
+      if (method === 'eth_requestAccounts') return ['0x1234567890123456789012345678901234567890']
+      if (method === 'eth_chainId') return '0x1'
+      if (method === 'yeying_identity_presentation') {
+        identityRequest = params[0]
+        return {
+          version: 1,
+          holder: 'did:yeying:wid_test',
+          audience: identityRequest.audience,
+          nonce: identityRequest.nonce,
+          issuedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 60000).toISOString(),
+          scopes: identityRequest.scopes,
+          proof: { type: 'YeyingIdentityPresentationProofV1', verificationMethod: 'did:yeying:wid_test#controller-1', purpose: 'authentication', proofValue: 'proof' }
+        }
+      }
+      throw new Error(`unexpected method ${method}`)
+    }
+  }
+  const fetcher = async (url, options) => {
+    if (String(url).endsWith('/identity/login/session')) {
+      return new Response(JSON.stringify({ code: 0, data: { session_id: 'sid-1', audience: 'http://router.local', nonce: 'nonce-1', scopes: ['identity.basic', 'identity.wallet', 'identity.email'] } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (String(url).endsWith('/identity/login/verify')) {
+      const body = JSON.parse(options.body)
+      assert.equal(body.session_id, 'sid-1')
+      return new Response(JSON.stringify({ code: 0, data: { token: 'token-1' } }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    throw new Error(`unexpected url ${url}`)
+  }
+
+  const result = await loginWithWalletIdentity({ provider, fetcher, baseUrl: 'http://router.local/api/v1/public/auth', storeToken: false })
+
+  assert.equal(result.token, 'token-1')
+  assert.equal(identityRequest.appId, undefined)
+  assert.equal(identityRequest.audience, 'http://router.local')
+  assert.equal(identityRequest.nonce, 'nonce-1')
 })
 
 test('identity presentation verifies the Wallet V1 raw controller key format', async () => {
