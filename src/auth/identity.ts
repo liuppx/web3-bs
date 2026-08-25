@@ -8,10 +8,12 @@ export type CredentialStatusResponse = {
 export type IdentityCredentialValidation = {
   issuer: string
   subject: string
-  credentialType: 'EmailCredential' | 'UsernameCredential'
+  credentialType: IdentityCredentialType
   credentialId: string
   payload: Record<string, unknown>
 }
+
+type IdentityCredentialType = 'EmailCredential' | 'UsernameCredential' | 'AvatarCredential'
 
 function decodePart(value: string) {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
@@ -33,7 +35,7 @@ export function decodeIdentityCredential(token: string) {
   return { header, payload, signingInput: `${parts[0]}.${parts[1]}`, signature: parts[2] }
 }
 
-export async function verifyIdentityCredential(token: string, options: { issuer: string; publicJwk: JsonWebKey; expectedSubject?: string; expectedType: 'EmailCredential' | 'UsernameCredential'; now?: number }) {
+export async function verifyIdentityCredential(token: string, options: { issuer: string; publicJwk: JsonWebKey; expectedSubject?: string; expectedType: IdentityCredentialType; now?: number }) {
   const decoded = decodeIdentityCredential(token)
   const payload = decoded.payload
   if (payload.iss !== options.issuer || (options.expectedSubject && payload.sub !== options.expectedSubject)) throw new Error('IDENTITY_ISSUER_UNTRUSTED')
@@ -63,7 +65,7 @@ import { getChainId, requestAccounts, requireProvider } from './provider'
 import { signMessage, setAccessToken } from './siwe'
 import type { Eip1193Provider, IdentityPresentation, IdentityPresentationRequest, IdentityPresentationScope, IdentityPresentationValidationOptions, IdentityPresentationCredentialValidationOptions, WalletIdentityLoginOptions, WalletIdentityLoginResult } from './types'
 
-const ALLOWED_SCOPES: IdentityPresentationScope[] = ['identity.basic', 'identity.wallet', 'identity.username', 'identity.email']
+const ALLOWED_SCOPES: IdentityPresentationScope[] = ['identity.basic', 'identity.wallet', 'identity.username', 'identity.email', 'identity.avatar']
 
 function normalizeScopes(scopes: readonly string[]) {
   const values = [...new Set(scopes.map(value => String(value || '').trim()))]
@@ -205,7 +207,11 @@ export async function verifyIdentityPresentation(presentation: unknown, options:
 export async function verifyIdentityPresentationCredentials(presentation: unknown, options: IdentityPresentationCredentialValidationOptions) {
   const value = await verifyIdentityPresentation(presentation, options)
   const credentials = value.credentials || []
-  const requiredTypes = (options.expectedScopes || value.scopes).filter(scope => scope === 'identity.email' || scope === 'identity.username').map(scope => scope === 'identity.email' ? 'EmailCredential' as const : 'UsernameCredential' as const)
+  const requiredTypes = (options.expectedScopes || value.scopes).filter(scope => scope === 'identity.email' || scope === 'identity.username' || scope === 'identity.avatar').map(scope => {
+    if (scope === 'identity.email') return 'EmailCredential' as const
+    if (scope === 'identity.username') return 'UsernameCredential' as const
+    return 'AvatarCredential' as const
+  })
   const uniqueTypes = [...new Set(requiredTypes)]
   const validations = []
   for (const expectedType of uniqueTypes) {

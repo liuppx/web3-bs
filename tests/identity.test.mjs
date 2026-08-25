@@ -21,6 +21,19 @@ test('identity credential verifies with browser WebCrypto Ed25519', async () => 
   await assert.rejects(() => verifyIdentityCredential(token, { issuer: 'did:web:other.example', publicJwk, expectedType: 'EmailCredential' }), /IDENTITY_ISSUER_UNTRUSTED/)
 })
 
+test('avatar credential verifies with browser WebCrypto Ed25519', async () => {
+  const pair = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify'])
+  const publicJwk = await crypto.subtle.exportKey('jwk', pair.publicKey)
+  const now = Math.floor(Date.now() / 1000)
+  const header = { alg: 'EdDSA', typ: 'JWT', kid: 'test-key' }
+  const payload = { iss: 'did:web:node.example', sub: 'did:yeying:wid_test', iat: now, nbf: now, exp: now + 3600, jti: 'urn:test:avatar', vc: { type: ['VerifiableCredential', 'AvatarCredential'], credentialSubject: { id: 'did:yeying:wid_test', avatarUri: 'https://avatar.example/alice.png' } } }
+  const signingInput = `${b64(JSON.stringify(header))}.${b64(JSON.stringify(payload))}`
+  const signature = await crypto.subtle.sign({ name: 'Ed25519' }, pair.privateKey, new TextEncoder().encode(signingInput))
+  const token = `${signingInput}.${b64(new Uint8Array(signature))}`
+  const result = await verifyIdentityCredential(token, { issuer: 'did:web:node.example', publicJwk, expectedSubject: payload.sub, expectedType: 'AvatarCredential' })
+  assert.equal(result.credentialType, 'AvatarCredential')
+})
+
 test('status query sends issuer and credentials and fails closed', async () => {
   let request
   const response = await queryCredentialStatuses('http://localhost:8100', 'did:web:node.example', ['urn:test:email'], async (url, options) => {
