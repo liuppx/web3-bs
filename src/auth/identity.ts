@@ -133,9 +133,24 @@ function normalizedChainKey(chainId: string | null) {
   return `eip155:${value}`
 }
 
+async function requestWalletIdentityAccounts(provider: Eip1193Provider, scopes?: IdentityPresentationScope[]) {
+  if (!scopes?.length) {
+    return await requestAccounts({ provider })
+  }
+  const requestedScopes = normalizeScopes(scopes)
+  const permissions = await provider.request({
+    method: 'wallet_requestPermissions',
+    params: [{ eth_accounts: {}, yeying_identity: { scopes: requestedScopes } }],
+  })
+  if (!Array.isArray(permissions)) throw new Error('WALLET_PERMISSIONS_INVALID')
+  const accountPermission = permissions.find((item: any) => item?.parentCapability === 'eth_accounts')
+  const accountCaveat = accountPermission?.caveats?.find((item: any) => item?.type === 'restrictReturnedAccounts')
+  return Array.isArray(accountCaveat?.value) ? accountCaveat.value : []
+}
+
 export async function loginWithWalletIdentity(options: WalletIdentityLoginOptions = {}): Promise<WalletIdentityLoginResult> {
   const provider = options.provider || await requireProvider()
-  const accounts = await requestAccounts({ provider })
+  const accounts = await requestWalletIdentityAccounts(provider, options.scopes)
   const address = options.address || accounts[0]
   if (!address) throw new Error('WALLET_ACCOUNT_REQUIRED')
   const fetcher = options.fetcher || fetch

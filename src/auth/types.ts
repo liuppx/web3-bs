@@ -201,6 +201,8 @@ export type IdentityPresentationCredentialValidationOptions = IdentityPresentati
 
 export type WalletIdentityLoginOptions = AuthBaseOptions & {
   provider?: Eip1193Provider;
+  /** Identity scopes requested together with the wallet connection permission. */
+  scopes?: IdentityPresentationScope[];
   address?: string;
   sessionPath?: string;
   verifyPath?: string;
