@@ -159,6 +159,7 @@ export type IdentityPresentationRequest = {
   scopes: IdentityPresentationScope[];
   account?: { chainKey: string; address: string };
   issuer?: string;
+  issuerEndpoint?: string;
   expiresAt?: string;
   statement?: string;
   requestId?: string;
