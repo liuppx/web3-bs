@@ -49,7 +49,7 @@ const SUITE_LIST = [
 
 test('getSupportedCipherSuites：透传 provider 响应', async () => {
   const provider = makeProvider(async (method) => {
-    assert.equal(method, 'yeying_getCipherSuites');
+    assert.equal(method, 'wallet_getCipherSuites');
     return { suites: SUITE_LIST };
   });
   const suites = await getSupportedCipherSuites({ provider });
@@ -70,7 +70,7 @@ test('getSupportedCipherSuites：响应格式错误抛错', async () => {
 
 test('encrypt：透传 params + 接收 ciphertext', async () => {
   const provider = makeProvider(async (method, params) => {
-    assert.equal(method, 'yeying_encrypt');
+    assert.equal(method, 'wallet_encrypt');
     const opts = Array.isArray(params) ? params[0] : params;
     assert.equal(opts.data, 'secret-data');
     assert.equal(opts.password, 'p');
@@ -92,7 +92,7 @@ test('encrypt：透传 params + 接收 ciphertext', async () => {
 
 test('encrypt：支持钱包派生密码参数，无需传 password', async () => {
   const provider = makeProvider(async (method, params) => {
-    assert.equal(method, 'yeying_encrypt');
+    assert.equal(method, 'wallet_encrypt');
     const opts = Array.isArray(params) ? params[0] : params;
     assert.equal(opts.data, 'wallet-secret');
     assert.equal(opts.password, undefined);
@@ -144,7 +144,7 @@ test('encrypt：响应缺 ciphertext 抛错', async () => {
 test('decrypt：base64 plaintext 还原为 Uint8Array', async () => {
   const original = new Uint8Array([72, 101, 108, 108, 111]); // "Hello"
   const provider = makeProvider(async (method, params) => {
-    assert.equal(method, 'yeying_decrypt');
+    assert.equal(method, 'wallet_decrypt');
     const opts = Array.isArray(params) ? params[0] : params;
     assert.equal(opts.ciphertext, 'v1:...');
     assert.equal(opts.password, 'p');

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -760,7 +761,16 @@ func main() {
 
 		issuedAt := nowMillis()
 		expiresAt := issuedAt + 5*60*1000
-		challenge := fmt.Sprintf("Sign to login\n\nnonce: %s\nissuedAt: %d", nonce, issuedAt)
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			origin = fmt.Sprintf("http://127.0.0.1:%d", port)
+		}
+		originURL, err := url.Parse(origin)
+		if err != nil || originURL.Host == "" {
+			writeJSON(w, http.StatusBadRequest, fail(400, "Invalid Origin"))
+			return
+		}
+		challenge := fmt.Sprintf("%s wants you to sign in with your Ethereum account:\n%s\n\nSign in to this DApp.\n\nURI: %s\nVersion: 1\nChain ID: 1\nNonce: %s\nIssued At: %s\nExpiration Time: %s", originURL.Host, body.Address, originURL.String(), nonce, time.UnixMilli(issuedAt).UTC().Format(time.RFC3339Nano), time.UnixMilli(expiresAt).UTC().Format(time.RFC3339Nano))
 
 		lock.Lock()
 		challenges[strings.ToLower(body.Address)] = challengeRecord{
@@ -788,9 +798,10 @@ func main() {
 		var body struct {
 			Address   string `json:"address"`
 			Signature string `json:"signature"`
+			Challenge string `json:"challenge"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Address == "" || body.Signature == "" {
-			writeJSON(w, http.StatusBadRequest, fail(400, "Missing address or signature"))
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Address == "" || body.Signature == "" || body.Challenge == "" {
+			writeJSON(w, http.StatusBadRequest, fail(400, "Missing address, challenge or signature"))
 			return
 		}
 		log.Printf("Auth verify request address=%s signature=%s", body.Address, preview(body.Signature))
@@ -811,6 +822,10 @@ func main() {
 			delete(challenges, key)
 			lock.Unlock()
 			writeJSON(w, http.StatusBadRequest, fail(400, "Challenge expired"))
+			return
+		}
+		if body.Challenge != record.Challenge {
+			writeJSON(w, http.StatusUnauthorized, fail(401, "SIWE message mismatch"))
 			return
 		}
 

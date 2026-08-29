@@ -1,10 +1,5 @@
 # SDK能力
 
-本文档合并原有：
-- `SDK能力与账户管理设计.md`
-- `能力矩阵.md`
-- `库的定位与能力边界.md`
-
 目标：用一个文档同时回答“这是什么、怎么选路线、怎么落地接入”。
 
 ## 1. 定位与边界
@@ -14,22 +9,26 @@
 > 浏览器端 DApp 连接、会话、认证、授权与存储接入 SDK
 
 更具体地说：
+
 - 以 EIP-1193 钱包为优先入口
 - 统一封装 Provider 发现、连接会话、SIWE 登录、UCAN 授权、中心化认证与 WebDAV 存储接入
 - 面向 DApp 前端集成，不承担后端鉴权逻辑
 
 它是什么：
+
 - 浏览器端前端集成 SDK
 - DApp 访问编排层（钱包 / App 钱包 / 中心化服务 / WebDAV）
 - 会话管理层（连接会话、认证会话、授权会话）
 
 它不是什么：
+
 - 不是链上交易构造与合约调用 SDK
 - 不是后端 UCAN/JWT 校验库
 - 不是 Node.js 服务端 SDK
 - 不是 WalletConnect / deep link / app bridge 本身
 
 实现边界：
+
 - 钱包协议语义由钱包仓库定义
 - audience / capability / app scope 由服务端定义
 - `web3-bs` 负责前端如何调用这些能力
@@ -37,6 +36,7 @@
 ## 2. 路线与能力矩阵
 
 路线定义：
+
 - 钱包插件：浏览器内已安装插件钱包
 - App 钱包：钱包 App 或桥接层向前端暴露 Provider
 - 中心化服务：不依赖链上钱包，直接接中心化认证/授权
@@ -46,10 +46,13 @@
 | Provider 发现 | ✅ | ⚠️ | ❌ | `getProvider` 适合插件；App 钱包通常需要外部先注入/适配 |
 | 请求账户 | ✅ | ✅ | ❌ | 依赖 EIP-1193 `eth_requestAccounts` |
 | 标准消息签名 | ✅ | ✅ | ❌ | `signMessage` |
-| challenge / SIWE 登录 | ✅ | ✅ | ❌ | `loginWithChallenge` |
+| SIWE 登录 | ✅ | ✅ | ❌ | `loginWithSiwe` |
+| 通用 challenge 登录 | Deprecated | Deprecated | ❌ | `loginWithChallenge`，仅供现有自定义协议迁移，下一个主版本删除 |
 | access token 缓存 / refresh | ✅ | ✅ | ✅ | `setAccessToken` / `authFetch` / `refreshAccessToken` |
-| 钱包身份 / 邮箱授权 | ✅ | ❌ | ❌ | `loginWithWalletIdentity` / `yeying_identity_presentation` |
-| UCAN Session 创建 | ✅ | ⚠️ | ❌ | 优先 `yeying_ucan_session`；不可用时使用本地 session |
+| 钱包身份 / 邮箱授权 | ✅ | ❌ | ❌ | `loginWithWalletIdentity` / `wallet_identity_presentation` |
+| Passkey 无插件身份登录 | ❌ | ❌ | ✅ | DApp 后端调用 Node authorization code + PKCE 接口 |
+| TOTP 敏感操作确认 | ❌ | ❌ | ✅ | DApp 后端调用 Node TOTP HTTP 接口；不是登录协议 |
+| UCAN Session 创建 | ✅ | ⚠️ | ❌ | 钱包托管使用 `wallet_ucan_session`；本地 session 是另一种明确实现 |
 | UCAN Root / Invocation | ✅ | ⚠️ | ❌ | Root 走 SIWE；Invocation 走 UCAN 签名 |
 | 多后端 UCAN 授权 | ✅ | ⚠️ | ❌ | 通过 delegation/invocation 按 audience/capability 下发 |
 | 中心化 session token | ✅ | ✅ | ✅ | `createCentralSession` |
@@ -60,11 +63,13 @@
 | 加解密（站点授权后静默） | ✅ | ⚠️ | ❌ | `encrypt` / `decrypt` / `getSupportedCipherSuites`（钱包插件路线） |
 
 说明：
+
 - `✅`：天然支持
 - `⚠️`：可支持，但需要额外前提（尤其是 provider 适配或钱包能力）
 - `❌`：该路线下不成立或不是典型用法
 
 选型建议：
+
 - 已有浏览器插件：优先钱包插件路线
 - 移动端 Web 且可接 App 钱包：走 App 钱包路线
 - 更关注接入效率或无钱包条件：走中心化服务路线
@@ -108,11 +113,13 @@ if (!pending.focused) {
 ```
 
 适用范围：
+
 - 钱包连接弹窗
 - 消息签名弹窗
 - 钱包解锁弹窗
 
 产品侧建议：
+
 - 用户重复点击“连接钱包 / 登录 / 签名确认”时，优先调用 `focusPendingApproval`
 - 只有在不存在待确认窗口时，才真正发起新的钱包 RPC
 - 这类逻辑应由 SDK 统一提供，业务应用只负责按钮状态与提示文案
@@ -141,6 +148,7 @@ const unsubscribe = watchAccounts(provider, () => {
 ### 4.1 SIWE + JWT（单后端优先）
 
 典型流程：
+
 1. `POST /api/v1/public/auth/challenge`
 2. 钱包签名 challenge
 3. `POST /api/v1/public/auth/verify`
@@ -149,7 +157,9 @@ const unsubscribe = watchAccounts(provider, () => {
 6. 退出时 `POST /api/v1/public/auth/logout`
 
 推荐 API 组合：
-- `loginWithChallenge`
+
+- `loginWithSiwe`
+- `loginWithChallenge`（Deprecated；不提供 EIP-4361 校验，仅供现有自定义协议迁移，下一个主版本删除）
 - `authFetch`
 - `refreshAccessToken`
 - `logout`
@@ -157,13 +167,15 @@ const unsubscribe = watchAccounts(provider, () => {
 ### 4.2 UCAN（多后端授权）
 
 典型流程：
+
 1. `createUcanSession`
-2. `getOrCreateUcanRoot`（SIWE bridge）
+2. `getOrCreateUcanRoot`（通过 `proof.type` 选择 Root Proof 策略）
 3. 可选 `createDelegationUcan`
 4. `createInvocationUcan`（按 audience + capability）
 5. `authUcanFetch` 访问目标后端
 
 说明：
+
 - Root 建议作为跨后端“统一授权根”
 - Invocation 作为短期令牌按后端和能力发放
 - Root 或 Invocation 过期后按链路重建
@@ -188,15 +200,20 @@ const unsubscribe = watchAccounts(provider, () => {
 - `getChainId` / `getBalance`
 - `signMessage`
 
-### 5.2 SIWE 与 JWT
+### 5.2 应用会话 Token
 
-- `loginWithChallenge`
 - `authFetch`
 - `refreshAccessToken`
 - `logout`
 - `getAccessToken` / `setAccessToken` / `clearAccessToken`
 
-### 5.3 UCAN 授权
+Token 存储是协议无关的应用会话基础设施，SIWE、Wallet Identity 和中心化认证均可使用。
+
+### 5.3 SIWE
+
+- `loginWithSiwe`
+
+### 5.4 UCAN 授权
 
 - `createUcanSession` / `getUcanSession`
 - `createRootUcan` / `getOrCreateUcanRoot`
@@ -207,7 +224,7 @@ const unsubscribe = watchAccounts(provider, () => {
 - `getUcanTokenTiming` / `isUcanTokenFresh`
 - `classifyUcanAuthError`
 
-### 5.4 中心化 UCAN
+### 5.5 中心化 UCAN
 
 - `getCentralIssuerInfo`
 - `createCentralSession`
@@ -215,7 +232,7 @@ const unsubscribe = watchAccounts(provider, () => {
 - `createAndIssueCentralUcan`
 - `authCentralUcanFetch`
 
-### 5.5 WebDAV 与会话编排
+### 5.6 WebDAV 与会话编排
 
 - `createWebDavClient`
 - `createShareLink` / `listShareLinks` / `revokeShareLink`
@@ -223,7 +240,7 @@ const unsubscribe = watchAccounts(provider, () => {
 - `initDappSession`
 - `deriveAppIdFromLocation` / `deriveAppIdFromHost`
 
-### 5.6 加解密服务
+### 5.7 加解密服务
 
 - `encrypt` — 用命名安全套件加密（默认 `aes-256-gcm`）
 - `decrypt` — 解密 v1 格式密文
@@ -232,32 +249,41 @@ const unsubscribe = watchAccounts(provider, () => {
 
 详细用法、安全模型、限制见 [`加解密服务.md`](./加解密服务.md)。
 
-### 5.7 Wallet Identity Login
+### 5.8 Wallet Identity Login
 
-- `loginWithWalletIdentity` — 创建应用登录 session，请求 Wallet 出示 `yeying_identity_presentation`，再把 presentation 交给应用后端验证；返回值顶层包含 `did` 和 `walletAddress`，其中 `did` 是 Web3 应用应保存的身份主键。
-- `requestIdentityPresentation` — 直接调用钱包插件的 `yeying_identity_presentation`。
-- `verifyIdentityPresentation` / `verifyIdentityPresentationCredentials` — 后端或同构环境可复用的 presentation 与 JWT-VC 校验辅助。
+- `loginWithWalletIdentity` — 创建应用登录 session，请求 Wallet 出示 `wallet_identity_presentation`，再把 presentation 交给应用后端验证；返回值顶层包含 `did` 和 `walletAddress`，其中 `did` 是 Web3 应用应保存的身份主键。
+- `requestIdentityPresentation` — 直接调用钱包插件的 `wallet_identity_presentation`。
+- `verifyIdentityPresentation` / `verifyIdentityPresentationCredentials` — 后端或同构环境可复用的 presentation 与 JWT-VC 校验辅助；请求 `identity.wallet` 时验证 `WalletAccountCredential` 及其和 `walletProof` 的一致性。
 
-第三方应用前端只负责把后端生成的 `audience`、`nonce`、scope 传给 Wallet；`appId` 仅作为可选展示上下文，不是钱包身份 presentation 的必需字段，也不应被当作 Node 应用主键。登录 session 可以返回 `issuerEndpoint`，`loginWithWalletIdentity` 会把它透传给 Wallet，用于过期邮箱、用户名或头像凭证的 Node challenge 自动续签。登录是否成功由应用后端校验钱包身份 presentation 后决定。仅需地址时继续使用 `loginWithChallenge`。需要邮箱时，请求 `identity.email` scope，并以后端验证过的 `EmailCredential` 为准；需要已验证头像时，请求 `identity.avatar` scope，并以后端验证过的 `AvatarCredential` 为准。
+第三方应用前端只负责把后端生成的 `audience`、`nonce`、scope 传给 Wallet；`appId` 仅作为可选展示上下文，不是钱包身份 presentation 的必需字段，也不应被当作 Node 应用主键。Wallet 使用本地有效凭证生成 presentation，应用后端使用预配置的 issuer 公钥/JWKS 和可信身份文档完成本地验证，正常登录不要求实时访问 Node。登录 session 可以返回 `issuerEndpoint`，仅当 Wallet 本地凭证过期或临近过期时，才透传给 Wallet 用于向 Node 发起一次性 challenge 续签。应用是否查询 Node credential status 属于独立的撤销策略。仅需地址控制权证明时使用 `loginWithSiwe`；需要邮箱时请求 `identity.email` scope，并以后端验证过的 `EmailCredential` 为准；需要已验证头像时请求 `identity.avatar` scope，并以后端验证过的 `AvatarCredential` 为准。
+
+### 5.9 身份认证器
+
+Passkey 无插件登录和 TOTP 敏感操作确认是 Node HTTP 能力，不是 EIP-1193 Provider RPC，也不是 web3-bs 浏览器端导出函数：
+
+- DApp 后端按[无插件身份登录接入](../身份授权/无插件身份登录接入.md)创建授权请求并兑换授权码。
+- Passkey 的注册和生命周期由 Wallet 按[通行证接入](../身份授权/通行证接入.md)管理。
+- TOTP 只在敏感操作中按[TOTP 验证接入](../身份授权/TOTP验证接入.md)校验，不建立登录会话。
 
 ## 6. 推荐接入组合
 
 | 场景 | 推荐组合 |
 | --- | --- |
-| 插件钱包 + 单后端登录 | `getProvider` + `requestAccounts` + `loginWithChallenge` + `authFetch` |
-| 插件钱包 + 钱包身份/邮箱登录 | `getProvider` + `requestAccounts` + `loginWithWalletIdentity` + 后端校验 presentation / JWT-VC |
-| 插件钱包 + UCAN 多后端 | `createUcanSession` + `getOrCreateUcanRoot` + `createInvocationUcan` |
-| App 钱包 + 登录 | `requestAccounts` + `signMessage` + `loginWithChallenge` + `authFetch` |
+| 插件钱包 + 单后端 SIWE 登录 | `getProvider` + `requestAccounts` + `loginWithSiwe` + `authFetch` |
+| 插件钱包 + 钱包身份/邮箱登录 | `getProvider` + `requestIdentityPresentation` 或 `loginWithWalletIdentity` + 后端本地校验 presentation / JWT-VC |
+| 插件钱包 + SIWE Root Proof + UCAN | `createUcanSession` + `getOrCreateUcanRoot({ proof: { type: 'siwe' } })` + `createInvocationUcan` |
+| App 钱包 + SIWE 登录 | `requestAccounts` + `signMessage` + `loginWithSiwe` + `authFetch` |
 | 中心化 JWT | `setAccessToken` + `authFetch` + `createWebDavClient` |
 | 中心化 UCAN | `createCentralSession` + `issueCentralUcan` + `authCentralUcanFetch` |
 | WebDAV 直接访问 | `createWebDavClient` |
 | WebDAV + UCAN 自动初始化 | `initWebDavStorage` |
 
 长请求建议：
+
 - 普通短请求使用默认 token skew 即可，skew 只用于判断是否自动换新 Invocation。
 - token 已过期或进入 skew 窗口时，应自动创建新的 Invocation，不应提前向用户报错。
 - 如果服务端仍返回 `UCAN expired` / 401，`authUcanFetch` 会在可重放请求体场景下自动刷新 Invocation 并重试一次。
-- 详见 [UCAN有效期与续期机制](./UCAN有效期与续期机制.md)。
+- 详见 [UCAN 有效期与续期](../身份授权/UCAN有效期与续期.md)。
 
 ## 7. 工程与安全注意事项
 
@@ -275,7 +301,7 @@ const unsubscribe = watchAccounts(provider, () => {
 
 ## 8. 相关阅读
 
-- [快速上手](./快速上手.md)
-- [UCAN有效期与续期机制](./UCAN有效期与续期机制.md)
-- [移动端认证与授权选型指南](./移动端认证与授权选型指南.md)
-- [开放接口规范](./开放接口规范.yaml)
+- [快速开始](../快速开始.md)
+- [UCAN 有效期与续期](../身份授权/UCAN有效期与续期.md)
+- [无钱包插件接入方案调研](../方案调研/无钱包插件接入方案调研.md)
+- [开放接口定义](./开放接口定义.yaml)

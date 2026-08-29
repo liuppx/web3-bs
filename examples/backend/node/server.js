@@ -555,10 +555,24 @@ app.post('/api/v1/public/auth/challenge', (req, res) => {
   }
   logInfo('Auth challenge request', { address });
 
-  const nonce = Math.random().toString(36).slice(2);
+  const origin = req.headers.origin || `http://127.0.0.1:${PORT}`;
+  const originUrl = new URL(origin);
+  const nonce = crypto.randomBytes(8).toString('hex');
   const issuedAt = now();
   const expiresAt = issuedAt + 5 * 60 * 1000;
-  const challenge = `Sign to login\n\nnonce: ${nonce}\nissuedAt: ${issuedAt}`;
+  const challenge = [
+    `${originUrl.host} wants you to sign in with your Ethereum account:`,
+    address,
+    '',
+    'Sign in to this DApp.',
+    '',
+    `URI: ${originUrl.origin}`,
+    'Version: 1',
+    'Chain ID: 1',
+    `Nonce: ${nonce}`,
+    `Issued At: ${new Date(issuedAt).toISOString()}`,
+    `Expiration Time: ${new Date(expiresAt).toISOString()}`,
+  ].join('\n');
 
   challenges.set(address.toLowerCase(), {
     challenge,
@@ -578,9 +592,9 @@ app.post('/api/v1/public/auth/challenge', (req, res) => {
 });
 
 app.post('/api/v1/public/auth/verify', (req, res) => {
-  const { address, signature } = req.body || {};
-  if (!address || !signature) {
-    return res.status(400).json(fail(400, 'Missing address or signature'));
+  const { address, signature, challenge } = req.body || {};
+  if (!address || !signature || !challenge) {
+    return res.status(400).json(fail(400, 'Missing address, challenge or signature'));
   }
   logInfo('Auth verify request', { address, signature: preview(signature) });
 
@@ -593,6 +607,9 @@ app.post('/api/v1/public/auth/verify', (req, res) => {
   if (now() > record.expiresAt) {
     challenges.delete(key);
     return res.status(400).json(fail(400, 'Challenge expired'));
+  }
+  if (challenge !== record.challenge) {
+    return res.status(401).json(fail(401, 'SIWE message mismatch'));
   }
 
   try {

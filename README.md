@@ -1,9 +1,10 @@
 # YeYing Browser DApp Access SDK
 
-`web3-bs` 是浏览器端 DApp 接入 SDK，用于统一封装：
+`web3-bs` 是浏览器端 DApp 接入 SDK，分别提供：
 
 - 钱包连接（EIP-1193 / EIP-6963）
 - SIWE challenge 登录与 JWT 鉴权请求
+- Wallet Identity 身份登录和资料出示
 - UCAN 多后端授权（钱包 UCAN RPC 优先，失败可回退本地 Ed25519 session）
 - 中心化 UCAN 发行服务接入
 - WebDAV 文件访问与应用目录初始化
@@ -26,7 +27,6 @@ npm install @yeying-community/web3-bs
 - `getChainId` / `getBalance`
 - `onAccountsChanged` / `onChainChanged`
 - `classifyWalletError` / `isUserRejectedWalletAction` / `isWalletReconnectError`
-- `connectAndGetWalletProfile` / `requestWalletProfilePermission` / `getWalletProfile`
 
 `requestAccounts` 默认会复用同一 provider 上尚未完成的连接请求，避免用户重复点击时触发多个钱包授权弹窗。
 当钱包已经存在待确认的连接、签名或解锁窗口时，可调用 `focusPendingApproval` 将该窗口重新拉到前台，而不是再发起一次新的请求。
@@ -42,7 +42,8 @@ npm install @yeying-community/web3-bs
 ### 2) SIWE + JWT
 
 - `signMessage`
-- `loginWithChallenge`
+- `loginWithSiwe`
+- `loginWithChallenge`（Deprecated，仅供现有自定义 challenge 协议迁移，下一个主版本删除）
 - `authFetch`
 - `refreshAccessToken`
 - `logout`
@@ -51,13 +52,13 @@ npm install @yeying-community/web3-bs
 ### 3) UCAN（钱包优先 + 本地回退）
 
 - `createUcanSession` / `getUcanSession`
-- `getOrCreateUcanRoot` / `createRootUcan`
+- `getOrCreateUcanRoot` / `createRootUcan`（通过 `proof.type` 选择 Root Proof 策略）
 - `createDelegationUcan` / `createInvocationUcan`
 - `authUcanFetch`
 - `normalizeUcanCapabilities`
 
 说明：
-- 能调用 `yeying_ucan_session` / `yeying_ucan_sign` 时，优先用钱包侧 UCAN session 签名。
+- 能调用 `wallet_ucan_session` / `wallet_ucan_sign` 时，使用钱包侧 UCAN session 签名。
 - 不支持上述钱包 RPC 时，SDK 会回退到浏览器本地 Ed25519 session（IndexedDB 持久化）。
 
 ### 4) 中心化 UCAN
@@ -85,7 +86,7 @@ npm install @yeying-community/web3-bs
 import {
   authFetch,
   focusPendingApproval,
-  loginWithChallenge,
+  loginWithSiwe,
   requestAccounts,
 } from '@yeying-community/web3-bs';
 
@@ -94,7 +95,7 @@ if (!pending.focused) {
   await requestAccounts();
 }
 
-await loginWithChallenge({
+await loginWithSiwe({
   baseUrl: 'http://localhost:3203/api/v1/public/auth',
   storeToken: false,
 });
@@ -199,8 +200,8 @@ ln -s /path/to/web3-bs /path/to/your-dapp/node_modules/@yeying-community/web3-bs
 
 ## 文档导航
 
-- [文档导航](./docs/文档导航.md)
-- [快速上手](./docs/快速上手.md)
-- [SDK能力](./docs/SDK能力.md)
-- [移动端认证与授权选型指南](./docs/移动端认证与授权选型指南.md)
-- [接口规范（OpenAPI）](./docs/开放接口规范.yaml)
+- [文档首页](./docs/README.md)
+- [快速开始](./docs/快速开始.md)
+- [SDK接口参考](./docs/接口参考/SDK接口参考.md)
+- [无钱包插件接入方案调研](./docs/方案调研/无钱包插件接入方案调研.md)
+- [接口规范（OpenAPI）](./docs/接口参考/开放接口定义.yaml)

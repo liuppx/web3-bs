@@ -4,7 +4,9 @@ import logging
 import os
 import secrets
 import time
+from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 from eth_account import Account
 from eth_account.messages import encode_defunct
@@ -394,7 +396,13 @@ def challenge():
     nonce = secrets.token_hex(8)
     issued_at = now_ms()
     expires_at = issued_at + 5 * 60 * 1000
-    challenge_text = f"Sign to login\n\nnonce: {nonce}\nissuedAt: {issued_at}"
+    origin = request.headers.get("Origin") or f"http://127.0.0.1:{PORT}"
+    parsed_origin = urlparse(origin)
+    if not parsed_origin.netloc:
+        return jsonify(fail(400, "Invalid Origin")), 400
+    issued_iso = datetime.fromtimestamp(issued_at / 1000, timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    expires_iso = datetime.fromtimestamp(expires_at / 1000, timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    challenge_text = f"{parsed_origin.netloc} wants you to sign in with your Ethereum account:\n{address}\n\nSign in to this DApp.\n\nURI: {origin}\nVersion: 1\nChain ID: 1\nNonce: {nonce}\nIssued At: {issued_iso}\nExpiration Time: {expires_iso}"
 
     challenges[address.lower()] = {
         "challenge": challenge_text,
@@ -423,8 +431,9 @@ def verify():
     data = request.get_json(silent=True) or {}
     address = data.get("address")
     signature = data.get("signature")
-    if not address or not signature:
-        return jsonify(fail(400, "Missing address or signature")), 400
+    challenge_text = data.get("challenge")
+    if not address or not signature or not challenge_text:
+        return jsonify(fail(400, "Missing address, challenge or signature")), 400
     logger.info("Auth verify request address=%s signature=%s", address, preview(signature))
 
     key = address.lower()
@@ -435,6 +444,8 @@ def verify():
     if now_ms() > record["expiresAt"]:
         challenges.pop(key, None)
         return jsonify(fail(400, "Challenge expired")), 400
+    if challenge_text != record["challenge"]:
+        return jsonify(fail(401, "SIWE message mismatch")), 401
 
     try:
         message = encode_defunct(text=record["challenge"])

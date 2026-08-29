@@ -12,6 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -99,7 +100,20 @@ public class AuthServer {
       String nonce = randomHex(8);
       long issuedAt = nowMillis();
       long expiresAt = issuedAt + 5 * 60 * 1000L;
-      String challenge = "Sign to login\n\nnonce: " + nonce + "\nissuedAt: " + issuedAt;
+      String origin = req.headers("Origin");
+      if (origin == null || origin.isBlank()) origin = "http://127.0.0.1:" + getEnv("PORT", "3202");
+      URI originUri;
+      try {
+        originUri = URI.create(origin);
+      } catch (IllegalArgumentException error) {
+        res.status(400);
+        return jsonResponse(res, fail(400, "Invalid Origin"));
+      }
+      if (originUri.getAuthority() == null) {
+        res.status(400);
+        return jsonResponse(res, fail(400, "Invalid Origin"));
+      }
+      String challenge = originUri.getAuthority() + " wants you to sign in with your Ethereum account:\n" + address + "\n\nSign in to this DApp.\n\nURI: " + origin + "\nVersion: 1\nChain ID: 1\nNonce: " + nonce + "\nIssued At: " + Instant.ofEpochMilli(issuedAt) + "\nExpiration Time: " + Instant.ofEpochMilli(expiresAt);
 
       CHALLENGES.put(address.toLowerCase(), new ChallengeRecord(challenge, issuedAt, expiresAt));
 
@@ -117,9 +131,10 @@ public class AuthServer {
       JsonObject body = parseJson(req.body());
       String address = getString(body, "address");
       String signature = getString(body, "signature");
-      if (address == null || signature == null) {
+      String challenge = getString(body, "challenge");
+      if (address == null || signature == null || challenge == null) {
         res.status(400);
-        return jsonResponse(res, fail(400, "Missing address or signature"));
+        return jsonResponse(res, fail(400, "Missing address, challenge or signature"));
       }
       logInfo("Auth verify request address=%s signature=%s", address, preview(signature));
 
@@ -134,6 +149,10 @@ public class AuthServer {
         CHALLENGES.remove(key);
         res.status(400);
         return jsonResponse(res, fail(400, "Challenge expired"));
+      }
+      if (!challenge.equals(record.challenge)) {
+        res.status(401);
+        return jsonResponse(res, fail(401, "SIWE message mismatch"));
       }
 
       String recovered;

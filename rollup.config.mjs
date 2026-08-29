@@ -2,6 +2,7 @@ import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import json from "@rollup/plugin-json"
 import typescript from '@rollup/plugin-typescript'
+import inject from '@rollup/plugin-inject'
 
 export default {
     input: './src/index.ts',
@@ -23,8 +24,9 @@ export default {
         warn(warning);
     },
     plugins: [
+        inject({ Buffer: ['buffer', 'Buffer'] }),
         typescript({include: ["src/**/*.ts"], exclude: ["node_modules", "**/*.ut.ts", "**/*.it.ts"]}),
-        resolve({browser: true}),
+        resolve({browser: true, preferBuiltins: false}),
         commonjs(),
         json()
     ],

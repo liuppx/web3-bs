@@ -1,4 +1,4 @@
-# UCAN有效期与续期机制
+# UCAN 有效期与续期机制
 
 本文档说明 `@yeying-community/web3-bs` 中 UCAN token 的有效期配置、过期判断和推荐续期策略。目标是让所有 DApp 使用同一套规则，而不是在各应用里各自硬编码。
 
@@ -15,11 +15,13 @@
 只判断 token “当前还没过期”是不够的，但正确处理方式不是让业务自己预估请求耗时，而是让 SDK 统一处理过期后的刷新重试。
 
 典型问题：
+
 - 用户发起请求时，本地判断 token 仍有效。
 - 服务端因为时钟差、校验策略或处理过程中 token 过期，最终返回 `UCAN expired`。
 - 用户已经等待、上游可能已经消耗 token，但前端拿不到有效结果。
 
 正确策略分两层：
+
 - 请求前优化：用 `skew` 做很小的时钟安全提前量。如果 token 即将过期，就在请求发出前静默生成新的 Invocation Token。
 - 请求后兜底：如果服务端仍返回 `UCAN expired`，SDK 自动重新生成 Invocation Token 并重试一次。
 
@@ -30,10 +32,12 @@
 Root UCAN 是用户通过钱包签名建立的授权根。
 
 默认有效期：
+
 - `DEFAULT_UCAN_SESSION_TTL_MS`
 - 当前值：24 小时
 
 特点：
+
 - 通常需要用户钱包签名。
 - 过期后需要重新创建 Root。
 - 如果钱包签名窗口被遮挡，应用应通过 SDK 的钱包弹窗聚焦能力唤回，而不是重复发起多个签名请求。
@@ -43,14 +47,17 @@ Root UCAN 是用户通过钱包签名建立的授权根。
 UCAN Session 是用于签发 Delegation / Invocation 的会话密钥。
 
 默认有效期：
+
 - `DEFAULT_UCAN_SESSION_TTL_MS`
 - 当前值：24 小时
 
 来源：
-- 钱包支持 `yeying_ucan_session` 时，优先使用钱包托管 session。
+
+- 钱包支持 `wallet_ucan_session` 时，使用钱包托管 session。
 - 钱包不支持时，SDK 回退到本地 Ed25519 session，并保存在 IndexedDB。
 
 过期处理：
+
 - session 过期后 SDK 会重新创建。
 - 如果需要钱包参与，可能触发钱包交互。
 
@@ -59,10 +66,12 @@ UCAN Session 是用于签发 Delegation / Invocation 的会话密钥。
 Delegation UCAN 用于把能力委托给另一个 audience。
 
 默认有效期：
+
 - `DEFAULT_UCAN_TOKEN_TTL_MS`
 - 当前值：40 分钟
 
 特点：
+
 - 适合短期委托。
 - 过期后可在 Root 和 Session 仍有效时重新签发。
 
@@ -71,14 +80,17 @@ Delegation UCAN 用于把能力委托给另一个 audience。
 Invocation UCAN 是真正发给目标服务的短期调用 token。
 
 默认有效期：
+
 - `DEFAULT_UCAN_TOKEN_TTL_MS`
 - 当前值：40 分钟
 
 默认时钟偏移：
+
 - `DEFAULT_UCAN_TOKEN_SKEW_MS`
 - 当前值：1 分钟
 
 特点：
+
 - 应按 audience + capability 生成。
 - 应短期有效，降低泄漏风险。
 - 请求前如果进入 `skew` 窗口，SDK 应自动重新生成 Invocation Token。
@@ -89,6 +101,7 @@ Invocation UCAN 是真正发给目标服务的短期调用 token。
 中心化 UCAN 由中心化服务签发。
 
 特点：
+
 - 有效期由中心化服务返回值决定。
 - 前端仍应使用 SDK 的 token timing 工具判断是否足够支撑请求。
 - 如果中心化 session 过期，需要走中心化 session 续期或重新登录。
@@ -117,6 +130,7 @@ console.log(timing.nbf);
 ```
 
 适用场景：
+
 - UI 展示授权剩余时间。
 - 请求前判断 token 是否仍可用。
 - 调试 UCAN 过期问题。
@@ -154,6 +168,7 @@ const ucan = await getOrCreateInvocationUcan({
 ```
 
 行为：
+
 - 如果 `cachedInvocationToken` 仍足够新鲜，直接复用。
 - 如果剩余有效期不足，自动创建新的 Invocation Token。
 - 如果 Session / Root 仍有效，这个过程不需要用户重新签名。
@@ -183,6 +198,7 @@ const response = await authUcanFetch(
 ```
 
 行为：
+
 - 第一次请求如果成功，直接返回。
 - 如果服务端返回可识别的 `UCAN expired` / 401，SDK 强制创建新的 Invocation Token。
 - SDK 使用新的 Invocation Token 自动重试一次。
@@ -204,6 +220,7 @@ if (info.shouldRefresh) {
 ```
 
 可识别类型：
+
 - `expired`
 - `not-before`
 - `unauthorized`
@@ -239,6 +256,7 @@ const storage = await initWebDavStorage({
 ```
 
 行为：
+
 - 如果缓存 token 已过期或进入 skew 窗口，SDK 会重新签发 invocation token。
 - 如果 Root / Session 仍有效，重新签发不需要用户重新签名。
 - 如果 Root / Session 已过期，才需要走更上层的授权重建。
@@ -255,20 +273,24 @@ const storage = await initWebDavStorage({
 ## 8. DApp 集成建议
 
 请求前：
+
 - 使用 SDK 默认 skew 判断是否复用旧 Invocation。
 - 如果 token 已过期或即将过期，SDK 应静默刷新或重建 Invocation。
 - 不要只用 `exp > now` 判断，更不要把“剩余有效期不足”直接暴露成用户错误。
 
 请求中：
+
 - 流式请求开始后不要频繁重试同一请求，避免重复消耗。
 - 如果服务端支持任务 ID，应优先恢复任务结果，而不是重新执行。
 
 请求失败后：
+
 - 使用 `classifyUcanAuthError` 判断错误。
 - `expired` / `invalid-token` / `unauthorized` 可以刷新 Invocation 后重试一次。
 - `forbidden` 通常是能力不足，不应盲目重试。
 
 账户变化后：
+
 - 清理 access token。
 - 清理 UCAN session。
 - 重新建立 Root / Session / Invocation。
@@ -278,6 +300,7 @@ const storage = await initWebDavStorage({
 用户不应该看到“token 过期导致本次请求失败但已经消耗资源”的结果。
 
 推荐体验：
+
 - 请求前静默检查 token 是否过期或即将过期。
 - token 已过期或即将过期时静默刷新 Invocation。
 - 需要钱包签名时，明确提示用户“需要重新授权”。
@@ -299,6 +322,7 @@ const storage = await initWebDavStorage({
 ```
 
 建议：
+
 - 401：认证缺失、token 无效、token 过期。
 - 403：认证有效但 capability 不足。
 - 错误 message 或 code 中明确包含 `UCAN_EXPIRED` / `UCAN_INVALID` / `UCAN_FORBIDDEN`。

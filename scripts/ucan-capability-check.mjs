@@ -27,7 +27,7 @@ function decodePayload(token) {
 function makeWalletProvider() {
   return {
     async request({ method }) {
-      if (method === 'yeying_ucan_session') {
+      if (method === 'wallet_ucan_session') {
         return {
           id: 'wallet-session',
           did: 'did:key:zWalletSession',
@@ -35,7 +35,7 @@ function makeWalletProvider() {
           expiresAt: Date.now() + 60 * 60 * 1000,
         };
       }
-      if (method === 'yeying_ucan_sign') {
+      if (method === 'wallet_ucan_sign') {
         return { signature: 'walletSignature' };
       }
       if (method === 'eth_accounts' || method === 'eth_requestAccounts') {
@@ -55,7 +55,7 @@ function makeWalletProvider() {
 function makeLocalFallbackProvider() {
   return {
     async request({ method }) {
-      if (method === 'yeying_ucan_session' || method === 'yeying_ucan_sign') {
+      if (method === 'wallet_ucan_session' || method === 'wallet_ucan_sign') {
         throw new Error(`${method} not supported`);
       }
       if (method === 'eth_accounts' || method === 'eth_requestAccounts') {
@@ -84,11 +84,9 @@ async function checkWalletManagedPath() {
   assert.equal(typeof session.signer, 'function');
 
   const root = await createRootUcan({
-    provider,
+    proof: { type: 'siwe', provider, domain: '127.0.0.1:8001', uri: 'http://127.0.0.1:8001/examples/frontend/dapp.html' },
     session,
     capabilities: [{ with: 'profile', can: 'read' }],
-    domain: '127.0.0.1:8001',
-    uri: 'http://127.0.0.1:8001/examples/frontend/dapp.html',
   });
   assert.equal(root.aud, session.did);
   assert.equal(root.type, 'siwe');
@@ -123,11 +121,9 @@ async function checkLocalFallbackPath() {
   assert.equal(typeof session.privateKey, 'object');
 
   const root = await createRootUcan({
-    provider,
+    proof: { type: 'siwe', provider, domain: '127.0.0.1:8001', uri: 'http://127.0.0.1:8001/examples/frontend/dapp.html' },
     session,
     capabilities: [{ with: 'profile', can: 'read' }],
-    domain: '127.0.0.1:8001',
-    uri: 'http://127.0.0.1:8001/examples/frontend/dapp.html',
   });
   assert.equal(root.aud, session.did);
 

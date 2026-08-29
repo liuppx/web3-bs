@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: YeYing Node Auth & Central UCAN Issuer API
+  title: DApp Auth and Authorization API
   version: 1.1.0
   description: |
-    OpenAPI contract aligned with the Node v1 implementation.
+    Recommended backend contract for DApps using web3-bs.
 
     Notes:
     - All responses use unified envelope: { code, message, data, timestamp }.
@@ -72,6 +72,52 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Verify failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/public/auth/identity/login/session:
+    post:
+      summary: Create Wallet Identity login session
+      description: Create a one-time audience, nonce and scope set for Wallet Identity Presentation.
+      responses:
+        '200':
+          description: Login session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityLoginSessionResponse'
+        '400':
+          description: Invalid application or scope configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/public/auth/identity/login/verify:
+    post:
+      summary: Verify Wallet Identity Presentation
+      description: Verify the one-time session, trusted identity document, Presentation proof and requested credentials, then issue a DApp session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityLoginVerifyRequest'
+      responses:
+        '200':
+          description: Presentation verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityLoginVerifyResponse'
+        '400':
+          description: Missing, expired or consumed login session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Presentation, identity document or credential verification failed
           content:
             application/json:
               schema:
@@ -349,11 +395,15 @@ components:
       type: object
       required:
         - address
+        - challenge
         - signature
       properties:
         address:
           type: string
           example: '0x751aa8b544c8aa6457d9428da5e38a24469f8d83'
+        challenge:
+          type: string
+          description: Exact EIP-4361 message returned by the challenge endpoint
         signature:
           type: string
           example: '0x...'
@@ -409,6 +459,68 @@ components:
         logout:
           type: boolean
           example: true
+    IdentityLoginSessionData:
+      type: object
+      required:
+        - session_id
+        - audience
+        - nonce
+        - scopes
+        - expires_at
+      properties:
+        session_id:
+          type: string
+        request_id:
+          type: string
+        audience:
+          type: string
+        nonce:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+            enum:
+              - identity.basic
+              - identity.wallet
+              - identity.username
+              - identity.email
+              - identity.avatar
+        expires_at:
+          type: string
+          format: date-time
+        issuerEndpoint:
+          type: string
+          format: uri
+    IdentityLoginVerifyRequest:
+      type: object
+      required:
+        - session_id
+        - presentation
+      properties:
+        session_id:
+          type: string
+        request_id:
+          type: string
+        presentation:
+          type: object
+          additionalProperties: true
+        address:
+          type: string
+          description: Optional application context; not an account permission or SIWE proof
+    IdentityLoginResultData:
+      type: object
+      required:
+        - token
+        - did
+      properties:
+        token:
+          type: string
+        did:
+          type: string
+        walletAddress:
+          type: string
+          description: Present only after the backend verifies identity.wallet
     ProfileMeData:
       type: object
       required:
@@ -621,6 +733,24 @@ components:
           properties:
             data:
               $ref: '#/components/schemas/LogoutData'
+    IdentityLoginSessionResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          required:
+            - data
+          properties:
+            data:
+              $ref: '#/components/schemas/IdentityLoginSessionData'
+    IdentityLoginVerifyResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          required:
+            - data
+          properties:
+            data:
+              $ref: '#/components/schemas/IdentityLoginResultData'
     ProfileMeResponse:
       allOf:
         - $ref: '#/components/schemas/BaseResponse'

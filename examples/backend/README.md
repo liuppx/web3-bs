@@ -22,7 +22,7 @@
 
 推荐你在前端按以下顺序模拟：
 1. `createUcanSession`：生成会话密钥（钱包托管优先，本地回退可用）
-2. `createRootUcan` / `getOrCreateUcanRoot`：建立 Root 授权（SIWE bridge）
+2. `createRootUcan` / `getOrCreateUcanRoot`：通过 `proof: { type: 'siwe' }` 使用 SIWE 建立 Root Proof
 3. `createDelegationUcan`（可选）：向下委任能力
 4. `createInvocationUcan`：面向目标后端生成请求级 token
 5. `Authorization: Bearer <UCAN>` 调用 `/api/v1/public/profile`
@@ -30,7 +30,7 @@
 建议能力模型（与 wallet 文档一致）：
 - 资源：`with=app:all:<appId>`
 - 动作：`can=invoke` / `can=read` / `can=write`
-- 兼容：后端仍接受历史字段 `resource/action`
+- 字段：后端接受 `with/can` 和 `resource/action`
 
 ## Node.js 版本
 

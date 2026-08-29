@@ -473,7 +473,7 @@
             <div class="card">
               <h2>SIWE 登录（可选能力）</h2>
               <p class="help">
-                当你需要后端登录态（access token + refresh cookie）时，使用 `loginWithChallenge`、`authFetch`、`refreshAccessToken`。
+                当你需要 SIWE 后端登录态（access token + refresh cookie）时，使用 `loginWithSiwe`、`authFetch`、`refreshAccessToken`。
               </p>
               <div class="grid">
                 <div class="field">
@@ -1223,7 +1223,7 @@ const stopChain = onChainChanged(provider, chainId => {
               cap: rootCapabilities.map(cap => ({ with: cap.with, can: cap.can })),
             };
             state.ucanRoot = await sdk.createRootUcan({
-              provider,
+              proof: { type: 'siwe', provider },
               session: state.ucanSession,
               capabilities: rootCapabilities,
               expiresInMs: rootTtlMs,
@@ -1509,7 +1509,7 @@ const stopChain = onChainChanged(provider, chainId => {
             handleWithLog('SIWE login', async () => {
               const sdk = ensureSdk();
               const provider = await ensureConnectedWallet();
-              const result = await sdk.loginWithChallenge({
+              const result = await sdk.loginWithSiwe({
                 provider,
                 address: state.account || undefined,
                 baseUrl: el.siweBaseUrl.value.trim(),
@@ -1573,7 +1573,7 @@ const stopChain = onChainChanged(provider, chainId => {
             handleWithLog('Central SIWE login', async () => {
               const sdk = ensureSdk();
               const provider = await ensureConnectedWallet();
-              const result = await sdk.loginWithChallenge({
+              const result = await sdk.loginWithSiwe({
                 provider,
                 address: state.account || undefined,
                 baseUrl: el.centralSiweBaseUrl.value.trim(),

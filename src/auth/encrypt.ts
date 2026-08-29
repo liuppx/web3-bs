@@ -1,7 +1,7 @@
 /**
  * 加密/解密 SDK API
  *
- * 调用钱包插件的 `yeying_encrypt` / `yeying_decrypt` / `yeying_getCipherSuites`
+ * 调用钱包插件的 `wallet_encrypt` / `wallet_decrypt` / `wallet_getCipherSuites`
  * EIP-1193 自定义方法。命名安全套件 + 静默执行 + 站点授权模型同 UCAN。
  *
  * 默认数据密码（password 参数）由 DApp 自行管理与钱包密码独立；
@@ -89,7 +89,7 @@ export async function encrypt(options: EncryptOptions): Promise<string> {
   const provider = options.provider || (await requireProvider());
   try {
     const result = await provider.request({
-      method: 'yeying_encrypt',
+      method: 'wallet_encrypt',
       params: [{
         data: options.data,
         password: options.password,
@@ -115,7 +115,7 @@ export async function decrypt(options: DecryptOptions): Promise<Uint8Array> {
   const provider = options.provider || (await requireProvider());
   try {
     const result = await provider.request({
-      method: 'yeying_decrypt',
+      method: 'wallet_decrypt',
       params: [{
         ciphertext: options.ciphertext,
         password: options.password,
@@ -145,7 +145,7 @@ export async function getSupportedCipherSuites(
   const provider = options.provider || (await requireProvider());
   try {
     const result = await provider.request({
-      method: 'yeying_getCipherSuites',
+      method: 'wallet_getCipherSuites',
       params: []
     });
     if (!result || typeof result !== 'object' || !Array.isArray((result as any).suites)) {
